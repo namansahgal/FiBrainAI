@@ -42,6 +42,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // --- Admin key guard ---
+  const adminSecret = process.env.ADMIN_SECRET;
+  const providedKey = request.headers.get("x-admin-key") ?? "";
+  if (!adminSecret || providedKey !== adminSecret) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   if (!isSupabaseConfigured || !supabaseAdmin) {
     return NextResponse.json({ configured: false }, { status: 503 });
   }

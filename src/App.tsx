@@ -135,7 +135,7 @@ export default function App() {
   };
 
   // Handle addition of a live local build log
-  const handleAddBuildLog = async (newLog: Omit<BuildLogEntry, 'id'>) => {
+  const handleAddBuildLog = async (newLog: Omit<BuildLogEntry, 'id'>, adminKey: string) => {
     const freshLog: BuildLogEntry = {
       ...newLog,
       id: `log-${Date.now()}`
@@ -146,7 +146,10 @@ export default function App() {
 
     const response = await fetch('/api/build-logs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': adminKey,
+      },
       body: JSON.stringify(newLog),
     }).catch(() => null);
 
@@ -382,7 +385,7 @@ export default function App() {
             {currentPage === 'build-log' && (
               <BuildLog 
                 logs={buildLogs} 
-                onAddLog={handleAddBuildLog} 
+                onAddLog={(newLog, adminKey) => handleAddBuildLog(newLog, adminKey)} 
               />
             )}
             
