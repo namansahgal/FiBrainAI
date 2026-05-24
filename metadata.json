@@ -1,0 +1,6 @@
+{
+  "name": "FiBrainAI",
+  "description": "An AI CFO for startup founders and businesses, tracing Naman Sahgal's building journey.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
