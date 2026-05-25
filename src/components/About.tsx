@@ -2,8 +2,22 @@ import React from 'react';
 import { 
   GraduationCap, 
   Code,
-  Sparkles
+  Sparkles,
+  Mail
 } from 'lucide-react';
+
+// Inline SVG icons for platforms not in this lucide-react version
+const LinkedinIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+);
+
+const XIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
 import { JOURNEY_TIMELINE } from '../data';
 
 export default function About() {
@@ -26,51 +40,85 @@ export default function About() {
       {/* Profile and Bio Grid */}
       <section className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start">
         
-        {/* Glowing Monogram Avatar / Photo Placeholder */}
+        {/* Profile Card */}
         <div className="md:col-span-4 flex flex-col items-center justify-center p-6 rounded-2xl glass text-center space-y-4 shadow-xl">
           <div className="relative">
             {/* Pulsing ring */}
-            <div className="absolute inset-0 rounded-full bg-violet-500/15 animate-ping" />
+            <div className="absolute inset-0 rounded-full bg-violet-500/10 animate-ping" />
             
-            {/* Avatar frame */}
-            <div className="relative h-28 w-28 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 p-1 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <div className="h-full w-full rounded-full bg-neutral-950 flex items-center justify-center flex-col text-white font-mono">
-                <span className="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-300">NS</span>
-                <span className="text-[9px] text-violet-400 font-bold uppercase tracking-widest mt-0.5">23 Y/O</span>
+            {/* Photo frame */}
+            <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 p-[2.5px] shadow-lg shadow-violet-500/25">
+              {/* 
+                ── PHOTO PLACEHOLDER ────────────────────────────────────────────
+                Replace the <div> below with:
+                <img
+                  src="/naman.jpg"         ← drop your photo in /public/naman.jpg
+                  alt="Naman Sahgal"
+                  className="h-full w-full rounded-full object-cover"
+                />
+                ─────────────────────────────────────────────────────────────── 
+              */}
+              <div className="h-full w-full rounded-full bg-neutral-900 flex items-center justify-center flex-col text-white font-mono overflow-hidden">
+                <span className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-300">
+                  NS
+                </span>
+                <span className="text-[9px] text-violet-400 font-bold uppercase tracking-widest mt-0.5">
+                  Photo Soon
+                </span>
               </div>
             </div>
-            
-            {/* Location badge on avatar */}
-            <span className="absolute -bottom-1 right-1 bg-violet-600 border border-violet-500 text-[10px] text-white px-2 py-0.5 rounded-full font-mono font-medium flex items-center gap-0.5 shadow-md">
-              Full-time Job
+
+            {/* Badge */}
+            <span className="absolute -bottom-1 right-0 bg-violet-600 border border-violet-500 text-[10px] text-white px-2 py-0.5 rounded-full font-mono font-medium shadow-md whitespace-nowrap">
+              Founder
             </span>
           </div>
 
-          <div className="space-y-1">
+          {/* Name */}
+          <div className="space-y-0.5">
             <h3 className="text-lg font-bold text-white">Naman Sahgal</h3>
-            <p className="text-xs font-mono text-neutral-400">Founder, FiBrainAI</p>
+            <p className="text-xs font-mono text-neutral-400">Founder, FiBrainAI · 23 y/o</p>
           </div>
 
-          <div className="pt-2 border-t border-white/5 w-full flex justify-center gap-3 text-neutral-450">
-            <a 
-              href="mailto:namansahgal03@gmail.com" 
-              className="p-1 px-2 text-xs font-mono hover:text-white transition-colors bg-white/5 border border-white/10 rounded hover:border-violet-500/30 flex items-center gap-1"
+          {/* Social Links */}
+          <div className="pt-3 border-t border-white/5 w-full space-y-2">
+            <a
+              href="mailto:naman@fibrainai.com"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/8 hover:border-violet-500/40 hover:bg-violet-950/20 transition-all group"
             >
-              Email
+              <Mail className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+              <span className="text-xs font-mono text-neutral-400 group-hover:text-white transition-colors truncate">
+                naman@fibrainai.com
+              </span>
             </a>
-            <span className="text-neutral-800">|</span>
-            <a 
-              href="https://linkedin.com" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="p-1 px-2 text-xs font-mono hover:text-white transition-colors bg-white/5 border border-white/10 rounded hover:border-violet-500/30 flex items-center gap-1"
+
+            <a
+              href="https://www.linkedin.com/in/naman-sahgal-97634b1aa/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/8 hover:border-violet-500/40 hover:bg-violet-950/20 transition-all group"
             >
-              LinkedIn
+              <LinkedinIcon className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+              <span className="text-xs font-mono text-neutral-400 group-hover:text-white transition-colors truncate">
+                linkedin.com/in/naman-sahgal
+              </span>
+            </a>
+
+            <a
+              href="https://x.com/Naman2399364"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/8 hover:border-violet-500/40 hover:bg-violet-950/20 transition-all group"
+            >
+              <XIcon className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+              <span className="text-xs font-mono text-neutral-400 group-hover:text-white transition-colors truncate">
+                @Naman2399364
+              </span>
             </a>
           </div>
         </div>
 
-        {/* Dynamic Bio Paragraphs */}
+        {/* Bio */}
         <div className="md:col-span-8 text-left space-y-6">
           <div className="p-8 rounded-2xl glass space-y-5 shadow-lg">
             <h2 className="text-lg font-mono text-violet-400 uppercase tracking-wider font-semibold">
@@ -100,6 +148,38 @@ export default function About() {
                 <Sparkles className="h-4 w-4 text-violet-400" />
                 <span>Zero-Mock Integrity</span>
               </div>
+            </div>
+          </div>
+
+          {/* Contact CTA card */}
+          <div className="p-5 rounded-2xl border border-violet-800/20 bg-violet-950/10 space-y-3">
+            <p className="text-sm font-mono text-violet-300 font-semibold">Want to connect?</p>
+            <p className="text-xs text-neutral-400 font-light leading-relaxed">
+              Whether you are a founder facing a financial blind spot, a potential co-founder, or just following the journey — reach out directly. I reply to every message.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <a
+                href="mailto:naman@fibrainai.com"
+                className="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg bg-violet-600/20 border border-violet-600/30 text-violet-300 hover:bg-violet-600/30 transition-colors"
+              >
+                <Mail className="h-3 w-3" /> Email Me
+              </a>
+              <a
+                href="https://www.linkedin.com/in/naman-sahgal-97634b1aa/"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg bg-violet-600/20 border border-violet-600/30 text-violet-300 hover:bg-violet-600/30 transition-colors"
+              >
+                <LinkedinIcon className="h-3 w-3" /> LinkedIn
+              </a>
+              <a
+                href="https://x.com/Naman2399364"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg bg-violet-600/20 border border-violet-600/30 text-violet-300 hover:bg-violet-600/30 transition-colors"
+              >
+                <XIcon className="h-3 w-3" /> X / Twitter
+              </a>
             </div>
           </div>
         </div>
