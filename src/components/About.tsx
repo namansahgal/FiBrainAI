@@ -48,24 +48,11 @@ export default function About() {
             
             {/* Photo frame */}
             <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 p-[2.5px] shadow-lg shadow-violet-500/25">
-              {/* 
-                ── PHOTO PLACEHOLDER ────────────────────────────────────────────
-                Replace the <div> below with:
-                <img
-                  src="/naman.jpg"         ← drop your photo in /public/naman.jpg
-                  alt="Naman Sahgal"
-                  className="h-full w-full rounded-full object-cover"
-                />
-                ─────────────────────────────────────────────────────────────── 
-              */}
-              <div className="h-full w-full rounded-full bg-neutral-900 flex items-center justify-center flex-col text-white font-mono overflow-hidden">
-                <span className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-300">
-                  NS
-                </span>
-                <span className="text-[9px] text-violet-400 font-bold uppercase tracking-widest mt-0.5">
-                  Photo Soon
-                </span>
-              </div>
+              <img
+                src="/naman.PNG"
+                alt="Naman Sahgal — Founder, FiBrainAI"
+                className="h-full w-full rounded-full object-cover object-top"
+              />
             </div>
 
             {/* Badge */}
