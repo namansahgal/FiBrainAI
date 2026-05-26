@@ -7,8 +7,12 @@ create extension if not exists "pgcrypto";
 create table if not exists public.waitlist (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
+  source text not null default 'hero',
   created_at timestamptz not null default now()
 );
+
+-- Migration: add source column if table already exists without it
+alter table public.waitlist add column if not exists source text not null default 'hero';
 
 -- Index for faster email lookups/upserts
 create index if not exists waitlist_email_idx on public.waitlist (email);

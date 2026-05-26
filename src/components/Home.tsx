@@ -15,28 +15,35 @@ import type { Page } from '../App';
 
 interface HomeProps {
   onNavigate: (page: Page) => void;
-  onSubmitWaitlist: (email: string) => void;
+  onSubmitWaitlist: (email: string, source: string) => void;
   isWaitlisted: boolean;
   waitlistCount?: number;
 }
 
-export default function Home({ onNavigate, onSubmitWaitlist, isWaitlisted }: HomeProps) {
+export default function Home({ onNavigate, onSubmitWaitlist, isWaitlisted, waitlistCount }: HomeProps) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [ctaEmail, setCtaEmail] = useState('');
+  const [ctaError, setCtaError] = useState('');
+  const [ctaSubmitted, setCtaSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setError('Please enter your email');
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Please provide a valid email address');
-      return;
-    }
+    if (!email) { setError('Please enter your email'); return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Please provide a valid email address'); return; }
     setError('');
-    onSubmitWaitlist(email);
+    onSubmitWaitlist(email, 'hero');
     setEmail('');
+  };
+
+  const handleCtaSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ctaEmail) { setCtaError('Please enter your email'); return; }
+    if (!/\S+@\S+\.\S+/.test(ctaEmail)) { setCtaError('Please provide a valid email address'); return; }
+    setCtaError('');
+    onSubmitWaitlist(ctaEmail, 'cta');
+    setCtaEmail('');
+    setCtaSubmitted(true);
   };
 
   return (
@@ -306,7 +313,7 @@ export default function Home({ onNavigate, onSubmitWaitlist, isWaitlisted }: Hom
         </div>
       </section>
 
-      {/* Build-in-Public Hook */}
+      {/* Bottom CTA — "Follow the Journey" with live waitlist input */}
       <section className="px-4 max-w-4xl mx-auto">
         <div className="rounded-3xl p-8 sm:p-12 bg-neutral-900/30 border border-neutral-800/70 text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-violet-700/5 blur-[80px]" />
@@ -321,7 +328,8 @@ export default function Home({ onNavigate, onSubmitWaitlist, isWaitlisted }: Hom
             I am a 23-year-old software engineer building completely transparently while balancing a full-time job. I share every major update, validation milestone, and tech breakthrough in my public logs.
           </p>
           
-          <div className="flex flex-wrap justify-center gap-4">
+          {/* Navigation buttons */}
+          <div className="flex flex-wrap justify-center gap-4 mb-10">
             <button
               onClick={() => onNavigate('demo')}
               className="cursor-pointer bg-violet-600 hover:bg-violet-500 text-white rounded-xl px-5 py-3 text-sm font-semibold transition-all flex items-center gap-1.5 shadow-lg shadow-violet-600/15"
@@ -342,6 +350,74 @@ export default function Home({ onNavigate, onSubmitWaitlist, isWaitlisted }: Hom
             >
               Meet Naman Sahgal
             </button>
+          </div>
+
+          {/* CTA Waitlist — inline email input */}
+          <div className="border-t border-white/5 pt-8">
+            <AnimatePresence mode="wait">
+              {isWaitlisted || ctaSubmitted ? (
+                <motion.div
+                  key="cta-success"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col items-center gap-2"
+                  id="cta-waitlist-success"
+                >
+                  <div className="inline-flex p-2.5 bg-violet-950/40 text-violet-400 rounded-full border border-violet-800/30">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <p className="text-white font-bold text-base">You're on the list!</p>
+                  <p className="text-neutral-400 text-xs font-mono max-w-xs">
+                    We'll reach out the moment FiBrainAI launches. Watch this space.
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.form
+                  key="cta-form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onSubmit={handleCtaSubmit}
+                  className="max-w-sm mx-auto space-y-3"
+                  id="cta-waitlist-form"
+                >
+                  <p className="text-sm font-mono text-neutral-400 mb-3">
+                    Secure your launch spot — join the waitlist
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      id="cta-waitlist-email"
+                      type="email"
+                      placeholder="founder@yourstartup.com"
+                      value={ctaEmail}
+                      onChange={(e) => { setCtaEmail(e.target.value); setCtaError(''); }}
+                      className="flex-1 px-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-lg text-white font-mono text-sm placeholder-neutral-600 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all"
+                    />
+                    <button
+                      id="cta-waitlist-submit"
+                      type="submit"
+                      className="cursor-pointer bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm py-2.5 px-5 rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap hover:shadow-lg hover:shadow-violet-600/20"
+                    >
+                      Join Waitlist <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  {ctaError && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs text-red-400 font-mono flex items-center gap-1.5"
+                    >
+                      <AlertCircle className="h-3 w-3" /> {ctaError}
+                    </motion.p>
+                  )}
+                  {waitlistCount && waitlistCount > 0 ? (
+                    <p className="text-[11px] font-mono text-neutral-600">
+                      {waitlistCount} founders already waiting
+                    </p>
+                  ) : null}
+                </motion.form>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </section>

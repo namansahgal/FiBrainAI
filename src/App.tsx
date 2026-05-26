@@ -109,7 +109,7 @@ export default function App() {
   }, []);
 
   // Handle Waitlist submission
-  const handleWaitlistSubmit = async (email: string) => {
+  const handleWaitlistSubmit = async (email: string, source: string = 'hero') => {
     setIsWaitlisted(true);
     localStorage.setItem('finbrain_waitlisted', 'true');
     const newCount = waitlistCount + 1;
@@ -119,7 +119,7 @@ export default function App() {
     const response = await fetch('/api/waitlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, source }),
     }).catch(() => null);
 
     if (response?.ok) {
@@ -368,7 +368,7 @@ export default function App() {
             {currentPage === 'home' && (
               <Home 
                 onNavigate={handleLinkClick}
-                onSubmitWaitlist={handleWaitlistSubmit}
+                onSubmitWaitlist={(email, source) => handleWaitlistSubmit(email, source)}
                 isWaitlisted={isWaitlisted}
                 waitlistCount={waitlistCount}
               />
