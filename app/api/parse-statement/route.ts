@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import Anthropic from "@anthropic-ai/sdk";
+import { generateInsight } from "@/src/lib/ai/gemini";
 import { parseStatement } from "../../../src/lib/parsers/bankParser";
 import {
   isSupabaseConfigured,
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No file provided." }, { status: 400 });
   }
 
-  // Context passed from onboarding (optional — improves Claude prompt)
+  // Context passed from onboarding (optional — improves Gemini prompt)
   const sector       = (formData.get("sector")       as string | null) ?? "";
   const teamSize     = (formData.get("teamSize")      as string | null) ?? "";
   const fundingStage = (formData.get("fundingStage")  as string | null) ?? "";
@@ -123,27 +123,21 @@ export async function POST(request: Request) {
   // Top category
   const topCategory = topCategories[0]?.[0] ?? "Other";
 
-  // ── Generate Claude insight ────────────────────────────────────────────
-  let insightText = "";
-  try {
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY ?? "",
-    });
+  // ── Generate Gemini insight ─────────────────────────────────────────────
+  const categoryList = topCategories
+    .map(([cat, amt]) => {
+      const pct = totalBurn > 0 ? ((amt / totalBurn) * 100).toFixed(0) : "0";
+      return `  - ${cat}: ${fmt(amt)} (${pct}% of burn)`;
+    })
+    .join("\n");
 
-    const categoryList = topCategories
-      .map(([cat, amt]) => {
-        const pct = totalBurn > 0 ? ((amt / totalBurn) * 100).toFixed(0) : "0";
-        return `  - ${cat}: ${fmt(amt)} (${pct}% of burn)`;
-      })
-      .join("\n");
+  // Detect any category >30% of burn
+  const unusualPatterns = topCategories
+    .filter(([, amt]) => totalBurn > 0 && (amt / totalBurn) > 0.3)
+    .map(([cat, amt]) => `${cat} at ${fmt(amt)} (${((amt / totalBurn) * 100).toFixed(0)}% of total burn)`)
+    .join(", ");
 
-    // Detect any category >30% of burn
-    const unusualPatterns = topCategories
-      .filter(([, amt]) => totalBurn > 0 && (amt / totalBurn) > 0.3)
-      .map(([cat, amt]) => `${cat} at ${fmt(amt)} (${((amt / totalBurn) * 100).toFixed(0)}% of total burn)`)
-      .join(", ");
-
-    const userPrompt = `I just analyzed a startup's bank statement. Here is what I found:
+  const userPrompt = `I just analyzed a startup's bank statement. Here is what I found:
 
 Company context:
 - Sector: ${sector || "Not specified"}
@@ -170,21 +164,10 @@ ${unusualPatterns ? `Unusual patterns: ${unusualPatterns}` : ""}
 
 Generate a first insight for this founder. Start with the single most important thing they need to know right now. Be specific with rupee amounts. Give one clear recommendation. Maximum 150 words. Sound like a sharp CFO friend, not a corporate tool.`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 300,
-      system:
-        "You are FiBrainAI, an AI CFO for early-stage Indian startups. You speak like a sharp, experienced CFO who has worked with hundreds of startups. You are direct, specific, never vague. You give one clear recommendation. You understand the Indian startup ecosystem deeply — UPI, GST, NEFT, burn culture, runway pressure. Never say 'I' — speak in second person about the founder's situation.",
-      messages: [{ role: "user", content: userPrompt }],
-    });
+  const systemPrompt =
+    "You are FiBrainAI, an AI CFO for early-stage Indian startups. You speak like a sharp, experienced CFO who has worked with hundreds of startups. You are direct, specific, never vague. You give one clear recommendation. You understand the Indian startup ecosystem deeply — UPI, GST, NEFT, burn culture, runway pressure. Never say 'I' — speak in second person about the founder's situation.";
 
-    insightText =
-      (message.content[0] as { type: string; text: string }).text ?? "";
-  } catch (err) {
-    console.error("[parse-statement] Claude error:", err);
-    // Fallback insight if Claude fails
-    insightText = `${fmt(avgMonthlyBurn)}/month average burn across ${monthsCount} month${monthsCount !== 1 ? "s" : ""}. Top cost: ${topCategory} at ${fmt(topCategories[0]?.[1] ?? 0)}. ${runwayMonths > 0 ? `Runway estimate: ${runwayMonths} months.` : "Upload your cash position for runway calculation."} Head to dashboard for the full breakdown.`;
-  }
+  const insightText = await generateInsight(userPrompt, systemPrompt);
 
   // ── Save to Supabase (only if company_id provided) ─────────────────────
   if (companyId && isSupabaseConfigured && supabaseAdmin) {
