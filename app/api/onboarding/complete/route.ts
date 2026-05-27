@@ -66,38 +66,64 @@ export async function POST(request: Request) {
     );
   }
 
-  // ── Insert company (service role bypasses RLS) ─────────────────────────
-  const { data: company, error: companyError } = await supabaseAdmin
+  // ── Upsert company (update if exists, insert if new) ────────────────────
+  // Check if a company already exists for this user
+  const { data: existing } = await supabaseAdmin
     .from("companies")
-    .insert({
-      user_id: user.id,
-      name: companyName.trim(),
-      sector: sector ?? "",
-      company_age: companyAge ?? "",
-      team_size: teamSize ?? "",
-      primary_pain_point: primaryPainPoint ?? "",
-      onboarding_completed: true,
-    })
     .select("id")
-    .single();
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
 
-  if (companyError) {
-    console.error("[onboarding/complete] company insert:", companyError);
-    // Handle duplicate — user may have already onboarded
-    if (companyError.code === "23505") {
-      return NextResponse.json(
-        { error: "Company already exists for this account." },
-        { status: 409 }
-      );
+  let companyId: string;
+
+  if (existing) {
+    // Update the existing company
+    const { error: updateError } = await supabaseAdmin
+      .from("companies")
+      .update({
+        name: companyName.trim(),
+        sector: sector ?? "",
+        company_age: companyAge ?? "",
+        team_size: teamSize ?? "",
+        primary_pain_point: primaryPainPoint ?? "",
+        onboarding_completed: true,
+      })
+      .eq("id", existing.id);
+
+    if (updateError) {
+      console.error("[onboarding/complete] company update:", updateError);
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
-    return NextResponse.json({ error: companyError.message }, { status: 500 });
+    companyId = existing.id;
+  } else {
+    // Insert new company
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from("companies")
+      .insert({
+        user_id: user.id,
+        name: companyName.trim(),
+        sector: sector ?? "",
+        company_age: companyAge ?? "",
+        team_size: teamSize ?? "",
+        primary_pain_point: primaryPainPoint ?? "",
+        onboarding_completed: true,
+      })
+      .select("id")
+      .single();
+
+    if (companyError) {
+      console.error("[onboarding/complete] company insert:", companyError);
+      return NextResponse.json({ error: companyError.message }, { status: 500 });
+    }
+    companyId = company.id;
   }
 
   // ── Insert financials ──────────────────────────────────────────────────
   const { error: financialsError } = await supabaseAdmin
     .from("company_financials")
     .insert({
-      company_id: company.id,
+      company_id: companyId,
       funding_stage: fundingStage ?? "",
       cash_balance_range: cashBalanceRange ?? "",
       monthly_spend_range: monthlySpendRange ?? "",
@@ -111,5 +137,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, company_id: company.id });
+  return NextResponse.json({ ok: true, company_id: companyId });
 }
