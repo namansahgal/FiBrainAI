@@ -242,9 +242,14 @@ export default function OnboardingPage() {
     if (step !== 5) return;
 
     // If file was uploaded, call the parse API in parallel with animation
+    // Pass onboarding context so Claude generates a startup-specific insight
     if (file && !skippedUpload) {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("sector", sector);
+      formData.append("teamSize", teamSize);
+      formData.append("fundingStage", fundingStage);
+      formData.append("cashRange", cashBalance);
       fetch("/api/parse-statement", { method: "POST", body: formData })
         .then((r) => r.json())
         .then((data) => setAiInsight(data.insight ?? null))

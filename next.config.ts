@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // pdf-parse and xlsx use Node.js built-ins — keep them server-side only
+  serverExternalPackages: ["pdf-parse", "xlsx"],
 };
 
 export default nextConfig;
