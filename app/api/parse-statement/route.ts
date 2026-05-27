@@ -164,7 +164,36 @@ export async function POST(request: Request) {
 
   const userPrompt = `${brief.markdown}\n\n---\n\nGenerate a first insight for this founder. Start with the single most important thing they need to know right now. Be specific with rupee amounts. Give one clear recommendation. Maximum 150 words. Sound like a sharp CFO friend, not a corporate tool.`;
 
-  const insightText = await generateInsight(userPrompt, systemPrompt);
+  let insightText = await generateInsight(userPrompt, systemPrompt);
+
+  // Computed fallback when AI is unavailable (rate limited / quota exhausted)
+  if (!insightText) {
+    const topCat = topCategories[0];
+    const topCatName = topCat?.[0] ?? "operating costs";
+    const topCatAmt = topCat?.[1] ?? 0;
+    const topCatPct = totalBurn > 0 ? ((topCatAmt / totalBurn) * 100).toFixed(0) : "0";
+
+    const parts: string[] = [];
+    parts.push(`Your average monthly burn is ${fmt(avgMonthlyBurn)} across ${monthsCount} month${monthsCount !== 1 ? "s" : ""} of data.`);
+    parts.push(`Biggest cost: ${topCatName} at ${fmt(topCatAmt)} (${topCatPct}% of total spend).`);
+
+    if (runwayMonths > 0 && runwayMonths < 200) {
+      parts.push(`At this rate, you have roughly ${runwayMonths} months of runway.`);
+      if (runwayMonths < 6) {
+        parts.push("⚠️ That's under 6 months — start fundraising conversations now.");
+      } else if (runwayMonths < 9) {
+        parts.push("Consider starting fundraise prep — VCs in India take 3-4 months to close.");
+      }
+    }
+
+    if (topCategories.length > 1) {
+      parts.push(`Second biggest spend: ${topCategories[1][0]} at ${fmt(topCategories[1][1])}.`);
+    }
+
+    parts.push("Head to the Brain tab for detailed financial Q&A.");
+    insightText = parts.join(" ");
+    console.log("[parse-statement] Used computed fallback insight (AI unavailable)");
+  }
 
   // ── Save to Supabase (only if company_id provided) ─────────────────────
   if (companyId && isSupabaseConfigured && supabaseAdmin) {

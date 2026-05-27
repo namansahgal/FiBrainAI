@@ -113,7 +113,14 @@ Founder: ${message}
 FiBrainAI:`;
 
   // ── Call Gemini ─────────────────────────────────────────────────────────
-  const response = await generateInsight(fullPrompt, systemPrompt);
+  let response = await generateInsight(fullPrompt, systemPrompt);
+
+  // Fallback when AI quota is exhausted
+  if (!response) {
+    response =
+      "I'm temporarily rate-limited by my AI provider. This usually resets within a few minutes. " +
+      "Try again shortly — your financial data is safely stored and ready for analysis.";
+  }
 
   return NextResponse.json({ response });
 }
