@@ -3,6 +3,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { generateInsight } from "@/src/lib/ai/gemini";
 import { parseStatement } from "../../../src/lib/parsers/bankParser";
+import { buildFinancialBrief } from "../../../src/lib/intelligence/buildFinancialBrief";
+import { storeBrief } from "../../../src/lib/intelligence/storeBrief";
 import {
   isSupabaseConfigured,
   supabaseAdmin,
@@ -123,49 +125,44 @@ export async function POST(request: Request) {
   // Top category
   const topCategory = topCategories[0]?.[0] ?? "Other";
 
-  // ── Generate Gemini insight ─────────────────────────────────────────────
-  const categoryList = topCategories
-    .map(([cat, amt]) => {
-      const pct = totalBurn > 0 ? ((amt / totalBurn) * 100).toFixed(0) : "0";
-      return `  - ${cat}: ${fmt(amt)} (${pct}% of burn)`;
-    })
-    .join("\n");
+  // ── Build financial brief ───────────────────────────────────────────────
+  const briefTxns = transactions.map((t) => ({
+    id: t.date + t.amount,
+    amount: t.amount,
+    type: t.type,
+    category: t.category,
+    description: t.description,
+    transaction_date: t.date,
+    is_recurring: t.isRecurring,
+  }));
 
-  // Detect any category >30% of burn
-  const unusualPatterns = topCategories
-    .filter(([, amt]) => totalBurn > 0 && (amt / totalBurn) > 0.3)
-    .map(([cat, amt]) => `${cat} at ${fmt(amt)} (${((amt / totalBurn) * 100).toFixed(0)}% of total burn)`)
-    .join(", ");
+  const brief = buildFinancialBrief(
+    {
+      name: "Startup",
+      sector: sector || "Not specified",
+      stage: fundingStage || "Not specified",
+      team_size: teamSize || "Not specified",
+      primary_pain_point: "",
+    },
+    {
+      funding_stage: fundingStage || "Not specified",
+      cash_balance_range: cashRange,
+      monthly_spend_range: "",
+      monthly_revenue: 0,
+    },
+    briefTxns,
+    []
+  );
 
-  const userPrompt = `I just analyzed a startup's bank statement. Here is what I found:
+  console.log("[parse-statement] Brief generated:");
+  console.log("  Token estimate:", brief.metadata.totalTokensEstimate);
+  console.log("  Transactions analyzed:", brief.metadata.transactionsAnalyzed);
 
-Company context:
-- Sector: ${sector || "Not specified"}
-- Team size: ${teamSize || "Not specified"}  
-- Funding stage: ${fundingStage || "Not specified"}
-
-Financial data (${monthsCount} month${monthsCount !== 1 ? "s" : ""} of data):
-- Total burn: ${fmt(totalBurn)}
-- Monthly average burn: ${fmt(avgMonthlyBurn)}
-- Total revenue (excl. salary): ${fmt(totalRevenue)}
-- Net burn: ${fmt(netBurn)}
-${cashBalance > 0 ? `- Cash in bank: ${fmt(cashBalance)}` : ""}
-${runwayMonths > 0 ? `- Runway estimate: ${runwayMonths} months` : ""}
-
-Top spending categories:
-${categoryList}
-
-Salary detected: ${summary.salaryDetected ? `Yes at ${fmt(summary.salaryAmount)}` : "No"}
-Total transactions analyzed: ${summary.transactionCount}
-Date range: ${summary.dateRange.from} to ${summary.dateRange.to}
-Bank: ${summary.bankDetected}
-
-${unusualPatterns ? `Unusual patterns: ${unusualPatterns}` : ""}
-
-Generate a first insight for this founder. Start with the single most important thing they need to know right now. Be specific with rupee amounts. Give one clear recommendation. Maximum 150 words. Sound like a sharp CFO friend, not a corporate tool.`;
-
+  // ── Generate Gemini insight using brief ─────────────────────────────────
   const systemPrompt =
     "You are FiBrainAI, an AI CFO for early-stage Indian startups. You speak like a sharp, experienced CFO who has worked with hundreds of startups. You are direct, specific, never vague. You give one clear recommendation. You understand the Indian startup ecosystem deeply — UPI, GST, NEFT, burn culture, runway pressure. Never say 'I' — speak in second person about the founder's situation.";
+
+  const userPrompt = `${brief.markdown}\n\n---\n\nGenerate a first insight for this founder. Start with the single most important thing they need to know right now. Be specific with rupee amounts. Give one clear recommendation. Maximum 150 words. Sound like a sharp CFO friend, not a corporate tool.`;
 
   const insightText = await generateInsight(userPrompt, systemPrompt);
 
@@ -248,6 +245,42 @@ Generate a first insight for this founder. Start with the single most important 
           severity,
           content:    insightText,
         });
+
+        // d. Build full brief with real company data and store it
+        const { data: companyData } = await supabaseAdmin
+          .from("companies")
+          .select("name, sector, company_age, team_size, primary_pain_point")
+          .eq("id", companyId)
+          .single();
+
+        const { data: finData } = await supabaseAdmin
+          .from("company_financials")
+          .select("funding_stage, cash_balance_range, monthly_spend_range")
+          .eq("company_id", companyId)
+          .single();
+
+        if (companyData && finData) {
+          const fullBrief = buildFinancialBrief(
+            {
+              name: companyData.name,
+              sector: companyData.sector,
+              stage: companyData.company_age,
+              team_size: companyData.team_size,
+              primary_pain_point: companyData.primary_pain_point ?? "",
+            },
+            {
+              funding_stage: finData.funding_stage,
+              cash_balance_range: finData.cash_balance_range,
+              monthly_spend_range: finData.monthly_spend_range,
+              monthly_revenue: 0,
+            },
+            briefTxns,
+            []
+          );
+
+          await storeBrief(companyId, fullBrief.markdown);
+          console.log("[parse-statement] Brief stored for company:", companyId);
+        }
       }
     } catch (dbErr) {
       // DB errors should not fail the API response — log and continue

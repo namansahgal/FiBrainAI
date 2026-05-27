@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { generateInsight } from "@/src/lib/ai/gemini";
+import { getStoredBrief } from "@/src/lib/intelligence/storeBrief";
 import {
   isSupabaseConfigured,
   supabaseAdmin,
@@ -52,6 +53,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Message is required." }, { status: 400 });
   }
 
+  // ── Fetch stored brief (server-side, prefer over client context) ───────
+  let financialContext = context; // fallback to client-sent context
+
+  const { data: company } = await supabaseAdmin
+    .from("companies")
+    .select("id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (company) {
+    const storedBrief = await getStoredBrief(company.id);
+    if (storedBrief) {
+      financialContext = storedBrief;
+    }
+  }
+
+  if (!financialContext) {
+    return NextResponse.json({
+      response: "Upload a bank statement first so I can analyze your finances.",
+    });
+  }
+
   // ── Build prompt ────────────────────────────────────────────────────────
   const systemPrompt = `You are FiBrainAI — the AI CFO for this startup. You have complete access to their financial data shown below.
 
@@ -80,7 +104,7 @@ Be direct. Be specific. Be useful.`;
     .join("\n");
 
   const fullPrompt = `COMPANY FINANCIAL DATA:
-${context}
+${financialContext}
 
 CONVERSATION HISTORY:
 ${conversationHistory}
