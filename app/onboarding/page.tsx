@@ -322,7 +322,25 @@ export default function OnboardingPage() {
         throw new Error(err.error ?? "Failed to save. Please try again.");
       }
 
-      // 2. Mark onboarding as complete in user metadata (client-side)
+      const { company_id } = await res.json();
+
+      // 2. If file was uploaded, re-submit with company_id so transactions
+      //    get persisted to the database (step 5 parsed without company_id)
+      if (file && !skippedUpload && company_id) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("company_id", company_id);
+        formData.append("sector", sector);
+        formData.append("teamSize", teamSize);
+        formData.append("fundingStage", fundingStage);
+        formData.append("cashRange", cashBalance);
+        // Fire and forget — don't block the redirect
+        fetch("/api/parse-statement", { method: "POST", body: formData }).catch(
+          () => {}
+        );
+      }
+
+      // 3. Mark onboarding as complete in user metadata (client-side)
       const supabase = createClient();
       await supabase.auth.updateUser({
         data: { onboarding_completed: true },

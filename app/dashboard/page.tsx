@@ -229,19 +229,18 @@ export default function DashboardPage() {
       const now = new Date();
       const y = now.getFullYear();
       const m = now.getMonth();
-      const thisStart = new Date(y, m, 1).toISOString().slice(0, 10);
       const lastStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
       const lastEnd   = new Date(y, m, 0).toISOString().slice(0, 10);
 
-      // 4. This month's transactions
-      const { data: txThis } = await sb
+      // 4. ALL transactions for this company
+      const { data: txAll } = await sb
         .from("transactions")
         .select("id, amount, type, category, description, transaction_date")
         .eq("company_id", co.id)
-        .gte("transaction_date", thisStart);
+        .order("transaction_date", { ascending: false });
 
-      const txT = (txThis ?? []) as Transaction[];
-      setHasTx(txT.length > 0);
+      const allTx = (txAll ?? []) as Transaction[];
+      setHasTx(allTx.length > 0);
 
       // 5. Last month debits (for MoM comparison)
       const { data: txLast } = await sb
@@ -262,11 +261,25 @@ export default function DashboardPage() {
       setInsights((ins ?? []) as Insight[]);
 
       // ── Compute metrics ───────────────────────────────────────────────────
-      const debits  = txT.filter((t) => t.type === "debit");
-      const credits = txT.filter((t) => t.type === "credit" && t.category !== "Salaries");
+      const debits  = allTx.filter((t) => t.type === "debit");
+      const credits = allTx.filter((t) => t.type === "credit" && t.category !== "Salaries");
 
-      const gb  = debits.reduce((s, t) => s + Number(t.amount), 0);
-      const rev = credits.reduce((s, t) => s + Number(t.amount), 0);
+      // Compute how many months the data spans
+      const dates = allTx.map((t) => t.transaction_date).sort();
+      const dateFrom = dates[0] ? new Date(dates[0]) : new Date();
+      const dateTo   = dates[dates.length - 1] ? new Date(dates[dates.length - 1]) : new Date();
+      const spanMonths = Math.max(
+        (dateTo.getFullYear() - dateFrom.getFullYear()) * 12 +
+        (dateTo.getMonth() - dateFrom.getMonth()) + 1,
+        1
+      );
+
+      const totalDebits  = debits.reduce((s, t) => s + Number(t.amount), 0);
+      const totalCredits = credits.reduce((s, t) => s + Number(t.amount), 0);
+
+      // Monthly averages
+      const gb  = totalDebits / spanMonths;
+      const rev = totalCredits / spanMonths;
       const nb  = Math.max(gb - rev, 0);
       const lmb = (txLast ?? [])
         .filter((t) => t.type === "debit")
@@ -275,9 +288,9 @@ export default function DashboardPage() {
       setGrossBurn(gb);
       setNetBurn(nb);
       setLastMonthBurn(lmb);
-      if (lmb > 0) setBurnChange(((nb - lmb) / lmb) * 100);
+      if (lmb > 0) setBurnChange(((gb - lmb) / lmb) * 100);
 
-      // Category breakdown — top 5 debit categories
+      // Category breakdown — top 5 debit categories (all time)
       const catMap: Record<string, number> = {};
       debits.forEach((t) => {
         catMap[t.category] = (catMap[t.category] ?? 0) + Number(t.amount);
@@ -289,9 +302,13 @@ export default function DashboardPage() {
           .slice(0, 5)
       );
 
-      // Runway = cash / effective burn
-      const divisor = nb > 0 ? nb : gb > 0 ? gb : 1;
-      setRunway(cash > 0 ? parseFloat((cash / divisor).toFixed(1)) : 0);
+      // Runway = cash / monthly net burn (only if we have transaction data)
+      if (allTx.length > 0) {
+        const burnDivisor = nb > 0 ? nb : gb > 0 ? gb : 0;
+        setRunway(cash > 0 && burnDivisor > 0 ? parseFloat((cash / burnDivisor).toFixed(1)) : 0);
+      } else {
+        setRunway(0);
+      }
 
       setLoading(false);
     })();
@@ -399,7 +416,7 @@ export default function DashboardPage() {
                 <span className="text-zinc-400 text-xs font-mono">
                   {fmt(cashBalance)} in bank
                 </span>
-                {runway > 0 && (
+                {hasTx && runway > 0 && runway < 120 && (
                   <span className="text-zinc-400 text-xs font-mono">
                     Zero cash: {zeroCashDate(runway)}
                   </span>
