@@ -17,7 +17,7 @@ if (apiKeys.length === 0) {
 
 function getModel(keyIndex: number) {
   const genAI = new GoogleGenerativeAI(apiKeys[keyIndex % apiKeys.length]);
-  return genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  return genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 }
 
 export async function generateInsight(
