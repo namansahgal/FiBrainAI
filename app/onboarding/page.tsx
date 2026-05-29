@@ -336,8 +336,9 @@ export default function OnboardingPage() {
         formData.append("teamSize", teamSize);
         formData.append("fundingStage", fundingStage);
         formData.append("cashRange", cashBalance);
-        // Fire and forget — don't block the redirect
-        fetch("/api/parse-statement", { method: "POST", body: formData }).catch(
+        
+        // Await the parsing and persistence to prevent dashboard/reports race conditions
+        await fetch("/api/parse-statement", { method: "POST", body: formData }).catch(
           () => {}
         );
       }
@@ -752,9 +753,16 @@ Your first action: Upload your last 3 months of bank statements and I'll show yo
 
                 {/* Insight card */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                  <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line font-light">
-                    {aiInsight ?? defaultInsight}
-                  </p>
+                  {!skippedUpload && !aiInsight ? (
+                    <div className="flex flex-col items-center justify-center py-6 gap-3">
+                      <Loader2 className="h-6 w-6 text-violet-400 animate-spin" />
+                      <p className="text-zinc-500 text-sm font-mono">Synthesizing financial insight…</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line font-light">
+                      {aiInsight ?? defaultInsight}
+                    </p>
+                  )}
                 </div>
 
                 {/* Error state */}
