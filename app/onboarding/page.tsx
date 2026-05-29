@@ -229,11 +229,13 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // ── Auth guard on mount ──────────────────────────────────────────────────
+  // ── Auth guard on mount ──────────────────────────────────────────────────────
+  const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) router.replace("/auth/login?next=/onboarding");
+      else setAuthChecked(true);
     });
   }, [router]);
 
@@ -296,7 +298,7 @@ export default function OnboardingPage() {
   };
 
   // ── Save to Supabase and redirect ────────────────────────────────────────
-  const handleGoToDashboard = async () => {
+  const saveOnboardingData = async () => {
     setSaving(true);
     setSaveError("");
 
@@ -346,13 +348,24 @@ export default function OnboardingPage() {
         data: { onboarding_completed: true },
       });
 
-      router.push("/dashboard");
+      return company_id;
     } catch (err: unknown) {
       setSaveError(
         err instanceof Error ? err.message : "Something went wrong."
       );
       setSaving(false);
+      return null;
     }
+  };
+
+  const handleGoToDashboard = async () => {
+    const companyId = await saveOnboardingData();
+    if (companyId) router.push("/dashboard");
+  };
+
+  const handleGoToBrain = async () => {
+    const companyId = await saveOnboardingData();
+    if (companyId) router.push("/brain");
   };
 
   // ── Validation guards ────────────────────────────────────────────────────
@@ -370,9 +383,17 @@ The most common financial blindspot for companies like yours: burn that looks co
 
 Your first action: Upload your last 3 months of bank statements and I'll show you exactly where your money is going — and what to cut first.`;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
   // Render
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -767,7 +788,7 @@ Your first action: Upload your last 3 months of bank statements and I'll show yo
 
                   <button
                     type="button"
-                    onClick={() => router.push("/brain")}
+                    onClick={handleGoToBrain}
                     disabled={saving}
                     className="cursor-pointer w-full border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 text-sm py-3.5 rounded-xl transition-all font-medium"
                   >

@@ -149,6 +149,7 @@ export default function BrainPage() {
   const pathname = usePathname();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesRef = useRef<ChatMessage[]>([]);
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
@@ -162,6 +163,11 @@ export default function BrainPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+
+  // Keep ref in sync with state to avoid stale closures
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // ── Scroll to bottom ──────────────────────────────────────────────────────
   const scrollToBottom = useCallback(() => {
@@ -264,20 +270,19 @@ export default function BrainPage() {
         timestamp: new Date().toISOString(),
       };
 
-      const updatedMessages = [...messages, userMsg];
+      // Use ref for latest messages to avoid stale closure
+      const updatedMessages = [...messagesRef.current, userMsg];
       setMessages(updatedMessages);
       setInput("");
       setIsThinking(true);
 
       try {
-        const context = buildContext(company, financials, transactions, snapshot);
-
         const res = await fetch("/api/brain/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: userInput.trim(),
-            context,
+            context: "",
             history: updatedMessages.slice(-6).map((m) => ({
               role: m.role,
               content: m.content,
@@ -298,13 +303,14 @@ export default function BrainPage() {
         const allMessages = [...updatedMessages, aiMsg];
         setMessages(allMessages);
 
-        // Save conversation to Supabase
+        // Save conversation to Supabase (limit to last 50 messages)
         const sb = createClient();
+        const messagesToSave = allMessages.slice(-50);
         if (conversationId) {
           await sb
             .from("conversations")
             .update({
-              messages: allMessages,
+              messages: messagesToSave,
               updated_at: new Date().toISOString(),
             })
             .eq("id", conversationId);
@@ -313,7 +319,7 @@ export default function BrainPage() {
             .from("conversations")
             .insert({
               company_id: company.id,
-              messages: allMessages,
+              messages: messagesToSave,
               updated_at: new Date().toISOString(),
             })
             .select("id")
@@ -336,7 +342,7 @@ export default function BrainPage() {
         inputRef.current?.focus();
       }
     },
-    [company, financials, transactions, snapshot, messages, conversationId]
+    [company, conversationId]
   );
 
   // ── Handle submit ─────────────────────────────────────────────────────────
@@ -433,7 +439,7 @@ export default function BrainPage() {
             <AnimatePresence initial={false}>
               {messages.map((msg, i) => (
                 <motion.div
-                  key={`${msg.role}-${i}`}
+                  key={`${msg.role}-${msg.timestamp}-${i}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.22 }}

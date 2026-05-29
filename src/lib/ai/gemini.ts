@@ -15,9 +15,12 @@ if (apiKeys.length === 0) {
   console.warn("[Gemini] No API keys configured!");
 }
 
-function getModel(keyIndex: number) {
+function getModel(keyIndex: number, systemPrompt?: string) {
   const genAI = new GoogleGenerativeAI(apiKeys[keyIndex % apiKeys.length]);
-  return genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  return genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    ...(systemPrompt ? { systemInstruction: systemPrompt } : {}),
+  });
 }
 
 export async function generateInsight(
@@ -28,16 +31,12 @@ export async function generateInsight(
     return "AI is not configured. Please add GEMINI_API_KEY to environment variables.";
   }
 
-  const fullPrompt = systemPrompt
-    ? `${systemPrompt}\n\n${prompt}`
-    : prompt;
-
   // Try each API key, with one retry per key for transient errors
   for (let keyIdx = 0; keyIdx < apiKeys.length; keyIdx++) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const model = getModel(keyIdx);
-        const result = await model.generateContent(fullPrompt);
+        const model = getModel(keyIdx, systemPrompt);
+        const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 

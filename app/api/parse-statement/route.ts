@@ -49,6 +49,25 @@ function groupByMonth<T extends { date: string }>(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
+  // ── Auth check (always required) ────────────────────────────────────────
+  const cookieStore = await cookies();
+  const sb = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: () => {},
+      },
+    }
+  );
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   // ── Parse multipart form ───────────────────────────────────────────────
   let formData: FormData;
   try {
@@ -60,6 +79,30 @@ export async function POST(request: Request) {
   const file = formData.get("file") as File | null;
   if (!file) {
     return NextResponse.json({ error: "No file provided." }, { status: 400 });
+  }
+
+  // ── File validation ────────────────────────────────────────────────────
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json(
+      { error: "File too large. Maximum size is 10MB." },
+      { status: 400 }
+    );
+  }
+
+  const allowedTypes = [
+    "text/csv",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/pdf",
+  ];
+  const ext = file.name?.toLowerCase()?.split(".").pop() ?? "";
+  const allowedExts = ["csv", "xls", "xlsx", "pdf"];
+  if (!allowedTypes.includes(file.type) && !allowedExts.includes(ext)) {
+    return NextResponse.json(
+      { error: "Unsupported file type. Upload CSV, XLS, XLSX, or PDF." },
+      { status: 400 }
+    );
   }
 
   // Context passed from onboarding (optional — improves Gemini prompt)
@@ -150,8 +193,7 @@ export async function POST(request: Request) {
       monthly_spend_range: "",
       monthly_revenue: 0,
     },
-    briefTxns,
-    []
+    briefTxns
   );
 
   console.log("[parse-statement] Brief generated:");
@@ -303,8 +345,7 @@ export async function POST(request: Request) {
               monthly_spend_range: finData.monthly_spend_range,
               monthly_revenue: 0,
             },
-            briefTxns,
-            []
+            briefTxns
           );
 
           await storeBrief(companyId, fullBrief.markdown);

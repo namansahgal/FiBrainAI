@@ -119,18 +119,21 @@ export async function POST(request: Request) {
     companyId = company.id;
   }
 
-  // ── Insert financials ──────────────────────────────────────────────────
+  // ── Upsert financials (prevent duplicates on re-onboard) ────────────────
   const { error: financialsError } = await supabaseAdmin
     .from("company_financials")
-    .insert({
-      company_id: companyId,
-      funding_stage: fundingStage ?? "",
-      cash_balance_range: cashBalanceRange ?? "",
-      monthly_spend_range: monthlySpendRange ?? "",
-    });
+    .upsert(
+      {
+        company_id: companyId,
+        funding_stage: fundingStage ?? "",
+        cash_balance_range: cashBalanceRange ?? "",
+        monthly_spend_range: monthlySpendRange ?? "",
+      },
+      { onConflict: "company_id" }
+    );
 
   if (financialsError) {
-    console.error("[onboarding/complete] financials insert:", financialsError);
+    console.error("[onboarding/complete] financials upsert:", financialsError);
     return NextResponse.json(
       { error: financialsError.message },
       { status: 500 }

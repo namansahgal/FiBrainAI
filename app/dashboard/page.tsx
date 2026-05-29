@@ -262,7 +262,7 @@ export default function DashboardPage() {
 
       // ── Compute metrics ───────────────────────────────────────────────────
       const debits  = allTx.filter((t) => t.type === "debit");
-      const credits = allTx.filter((t) => t.type === "credit" && t.category !== "Salaries");
+      const credits = allTx.filter((t) => t.type === "credit");
 
       // Compute how many months the data spans
       const dates = allTx.map((t) => t.transaction_date).sort();
@@ -288,7 +288,14 @@ export default function DashboardPage() {
       setGrossBurn(gb);
       setNetBurn(nb);
       setLastMonthBurn(lmb);
-      if (lmb > 0) setBurnChange(((gb - lmb) / lmb) * 100);
+
+      // Burn change: current month vs last month (not average vs last month)
+      const curDate = new Date();
+      const curStart = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const curMonthBurn = allTx
+        .filter((t) => t.type === "debit" && t.transaction_date >= curStart)
+        .reduce((s, t) => s + Number(t.amount), 0);
+      if (lmb > 0) setBurnChange(((curMonthBurn - lmb) / lmb) * 100);
 
       // Category breakdown — top 5 debit categories (all time)
       const catMap: Record<string, number> = {};
@@ -347,7 +354,25 @@ export default function DashboardPage() {
         type="file"
         accept=".pdf,.xls,.xlsx,.csv"
         className="hidden"
-        onChange={() => {}}
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          if (!f || !company) return;
+          try {
+            const fd = new FormData();
+            fd.append("file", f);
+            fd.append("company_id", company.id);
+            const res = await fetch("/api/parse-statement", { method: "POST", body: fd });
+            if (res.ok) {
+              window.location.reload();
+            } else {
+              const data = await res.json();
+              alert(data.error || "Upload failed.");
+            }
+          } catch {
+            alert("Upload failed. Please try again.");
+          }
+          e.target.value = "";
+        }}
       />
 
       <main className="max-w-[390px] mx-auto px-4 pt-12 pb-28">
@@ -481,7 +506,8 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-2">
                   {categories.map((cat, i) => {
-                    const pct = grossBurn > 0 ? (cat.amount / grossBurn) * 100 : 0;
+                    const totalDebits = categories.reduce((s, c) => s + c.amount, 0);
+                    const pct = totalDebits > 0 ? (cat.amount / totalDebits) * 100 : 0;
                     return (
                       <motion.div
                         key={cat.category}

@@ -53,9 +53,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Message is required." }, { status: 400 });
   }
 
-  // ── Fetch stored brief (server-side, prefer over client context) ───────
-  let financialContext = context; // fallback to client-sent context
-
+  // ── Fetch stored brief (server-side only — no client context for security) ─
   const { data: company } = await supabaseAdmin
     .from("companies")
     .select("id")
@@ -63,12 +61,13 @@ export async function POST(request: Request) {
     .limit(1)
     .maybeSingle();
 
-  if (company) {
-    const storedBrief = await getStoredBrief(company.id);
-    if (storedBrief) {
-      financialContext = storedBrief;
-    }
+  if (!company) {
+    return NextResponse.json({
+      response: "Complete onboarding first to set up your company profile.",
+    });
   }
+
+  const financialContext = await getStoredBrief(company.id);
 
   if (!financialContext) {
     return NextResponse.json({

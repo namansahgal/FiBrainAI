@@ -3,16 +3,23 @@
 //
 // Saves the brief to Supabase so every AI call
 // fetches it from DB instead of regenerating.
+// Uses a singleton admin client for efficiency.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-function getAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
-  );
+// Singleton admin client — created once, reused
+let _admin: SupabaseClient | null = null;
+
+function getAdmin(): SupabaseClient {
+  if (!_admin) {
+    _admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    );
+  }
+  return _admin;
 }
 
 export async function storeBrief(
@@ -21,7 +28,7 @@ export async function storeBrief(
 ): Promise<void> {
   const supabase = getAdmin();
 
-  await supabase.from("financial_briefs").upsert(
+  const { error } = await supabase.from("financial_briefs").upsert(
     {
       company_id: companyId,
       brief_markdown: brief,
@@ -30,6 +37,10 @@ export async function storeBrief(
     },
     { onConflict: "company_id" }
   );
+
+  if (error) {
+    console.error("[storeBrief] Failed to store brief:", error.message);
+  }
 }
 
 export async function getStoredBrief(
@@ -37,11 +48,16 @@ export async function getStoredBrief(
 ): Promise<string | null> {
   const supabase = getAdmin();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("financial_briefs")
     .select("brief_markdown")
     .eq("company_id", companyId)
     .single();
+
+  if (error) {
+    console.error("[getStoredBrief] Failed to fetch brief:", error.message);
+    return null;
+  }
 
   return data?.brief_markdown || null;
 }

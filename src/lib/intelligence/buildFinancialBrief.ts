@@ -34,16 +34,6 @@ type CompanyFinancials = {
   monthly_revenue: number;
 };
 
-type MonthlySnapshot = {
-  month: number;
-  year: number;
-  gross_burn: number;
-  net_burn: number;
-  total_revenue: number;
-  cash_balance: number;
-  runway_months: number;
-  category_breakdown: Record<string, number>;
-};
 
 type FinancialBrief = {
   markdown: string;
@@ -72,15 +62,18 @@ function parseCashBalance(range: string): number {
 export function buildFinancialBrief(
   company: Company,
   financials: CompanyFinancials,
-  transactions: Transaction[],
-  snapshots: MonthlySnapshot[]
+  transactions: Transaction[]
 ): FinancialBrief {
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
 
-  // Suppress unused variable — snapshots reserved for future trend overlays
-  void snapshots;
+  // Use the latest month in the data — not the calendar month.
+  // This ensures historical uploads show real data instead of ₹0.
+  const sortedDates = transactions.map((t) => t.transaction_date).sort();
+  const latestDate = sortedDates.length > 0
+    ? new Date(sortedDates[sortedDates.length - 1])
+    : now;
+  const currentMonth = latestDate.getMonth() + 1;
+  const currentYear = latestDate.getFullYear();
 
   // ── 1. SEPARATE DEBITS AND CREDITS ─────────────────────────────────────
   const debits = transactions.filter((t) => t.type === "debit");
@@ -103,7 +96,6 @@ export function buildFinancialBrief(
   );
 
   const totalRevenue = currentMonthCredits
-    .filter((t) => t.category !== "Salaries")
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netBurn = Math.max(0, grossBurn - totalRevenue);
@@ -263,9 +255,6 @@ export function buildFinancialBrief(
     "Benchmark data being compiled for your sector";
 
   // ── 9. DATE RANGE ─────────────────────────────────────────────────────
-  const sortedDates = transactions
-    .map((t) => t.transaction_date)
-    .sort();
   const dateRangeStr =
     sortedDates.length > 0
       ? `${sortedDates[0]} to ${sortedDates[sortedDates.length - 1]}`
