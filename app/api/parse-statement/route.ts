@@ -288,20 +288,41 @@ export async function POST(request: Request) {
             mCatMap[t.category] = (mCatMap[t.category] ?? 0) + t.amount;
           });
 
-          await supabaseAdmin.from("monthly_snapshots").upsert(
-            {
-              company_id:         companyId,
-              month:              `${monthKey}-01`,
-              gross_burn:         mGross,
-              total_revenue:      mRev,
-              net_burn:           mNet,
-              cash_balance:       cashBalance,
-              runway_months:      mRunway,
-              category_breakdown: mCatMap,
-              updated_at:         new Date().toISOString(),
-            },
-            { onConflict: "company_id,month" }
-          );
+          const monthStr = `${monthKey}-01`;
+          const { data: existingSnap } = await supabaseAdmin
+            .from("monthly_snapshots")
+            .select("id")
+            .eq("company_id", companyId)
+            .eq("month", monthStr)
+            .limit(1)
+            .maybeSingle();
+
+          if (existingSnap) {
+            await supabaseAdmin.from("monthly_snapshots")
+              .update({
+                gross_burn:         mGross,
+                total_revenue:      mRev,
+                net_burn:           mNet,
+                cash_balance:       cashBalance,
+                runway_months:      mRunway,
+                category_breakdown: mCatMap,
+                updated_at:         new Date().toISOString(),
+              })
+              .eq("id", existingSnap.id);
+          } else {
+            await supabaseAdmin.from("monthly_snapshots")
+              .insert({
+                company_id:         companyId,
+                month:              monthStr,
+                gross_burn:         mGross,
+                total_revenue:      mRev,
+                net_burn:           mNet,
+                cash_balance:       cashBalance,
+                runway_months:      mRunway,
+                category_breakdown: mCatMap,
+                updated_at:         new Date().toISOString(),
+              });
+          }
         }
 
         // c. Save insight

@@ -120,20 +120,46 @@ export async function POST(request: Request) {
   }
 
   // ── Upsert financials (prevent duplicates on re-onboard) ────────────────
-  const { error: financialsError } = await supabaseAdmin
+  const { data: existingFinancials, error: checkError } = await supabaseAdmin
     .from("company_financials")
-    .upsert(
-      {
+    .select("id")
+    .eq("company_id", companyId)
+    .limit(1)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error("[onboarding/complete] financials check:", checkError);
+    return NextResponse.json(
+      { error: checkError.message },
+      { status: 500 }
+    );
+  }
+
+  let financialsError;
+  if (existingFinancials) {
+    const { error } = await supabaseAdmin
+      .from("company_financials")
+      .update({
+        funding_stage: fundingStage ?? "",
+        cash_balance_range: cashBalanceRange ?? "",
+        monthly_spend_range: monthlySpendRange ?? "",
+      })
+      .eq("id", existingFinancials.id);
+    financialsError = error;
+  } else {
+    const { error } = await supabaseAdmin
+      .from("company_financials")
+      .insert({
         company_id: companyId,
         funding_stage: fundingStage ?? "",
         cash_balance_range: cashBalanceRange ?? "",
         monthly_spend_range: monthlySpendRange ?? "",
-      },
-      { onConflict: "company_id" }
-    );
+      });
+    financialsError = error;
+  }
 
   if (financialsError) {
-    console.error("[onboarding/complete] financials upsert:", financialsError);
+    console.error("[onboarding/complete] financials save error:", financialsError);
     return NextResponse.json(
       { error: financialsError.message },
       { status: 500 }

@@ -28,18 +28,43 @@ export async function storeBrief(
 ): Promise<void> {
   const supabase = getAdmin();
 
-  const { error } = await supabase.from("financial_briefs").upsert(
-    {
-      company_id: companyId,
-      brief_markdown: brief,
-      generated_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "company_id" }
-  );
+  // Check if brief already exists for this company
+  const { data: existingBrief, error: checkError } = await supabase
+    .from("financial_briefs")
+    .select("company_id")
+    .eq("company_id", companyId)
+    .limit(1)
+    .maybeSingle();
 
-  if (error) {
-    console.error("[storeBrief] Failed to store brief:", error.message);
+  if (checkError) {
+    console.error("[storeBrief] Failed to check for existing brief:", checkError.message);
+    return;
+  }
+
+  let saveError;
+  if (existingBrief) {
+    const { error } = await supabase
+      .from("financial_briefs")
+      .update({
+        brief_markdown: brief,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("company_id", companyId);
+    saveError = error;
+  } else {
+    const { error } = await supabase
+      .from("financial_briefs")
+      .insert({
+        company_id: companyId,
+        brief_markdown: brief,
+        generated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    saveError = error;
+  }
+
+  if (saveError) {
+    console.error("[storeBrief] Failed to save brief:", saveError.message);
   }
 }
 
