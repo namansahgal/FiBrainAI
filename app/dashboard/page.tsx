@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Bell, Cpu, FileText, Settings, X, Building2, TrendingUp, Sparkles, UploadCloud } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { createClient } from "@/src/lib/supabase/client";
 import AppLayout from "@/src/components/layout/AppLayout";
 
@@ -15,9 +16,6 @@ import AppLayout from "@/src/components/layout/AppLayout";
 type Company = {
   id: string;
   name: string;
-  sector: string;
-  company_age: string;
-  team_size: string;
 };
 
 type Financials = {
@@ -33,6 +31,13 @@ type Transaction = {
   category: string;
   description: string;
   transaction_date: string;
+};
+
+type Snapshot = {
+  month: string;
+  gross_burn: number;
+  net_burn: number;
+  total_revenue: number;
 };
 
 type Insight = {
@@ -61,13 +66,6 @@ function fmt(amount: number): string {
   return `₹${amount.toFixed(0)}`;
 }
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 function zeroCashDate(runway: number): string {
   const d = new Date();
   d.setMonth(d.getMonth() + Math.floor(runway));
@@ -89,82 +87,57 @@ const CAT_EMOJI: Record<string, string> = {
   Other: "📦",
 };
 
-function runwayColor(m: number) {
-  if (m > 12) return "text-emerald-400";
-  if (m >= 6) return "text-white";
-  return "text-red-400";
-}
-
-function runwayBarColor(m: number) {
-  if (m > 12) return "bg-emerald-400";
-  if (m >= 6) return "bg-white/80";
-  return "bg-red-400";
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Count-Up Animation Hook
-// ─────────────────────────────────────────────────────────────────────────────
-
-function useCountUp(target: number, duration = 1300): number {
-  const [val, setVal] = useState(0);
-
-  useEffect(() => {
-    if (target === 0) {
-      setVal(0);
-      return;
-    }
-    let start: number | null = null;
-
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const t = Math.min((ts - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // cubic ease-out
-      setVal(parseFloat((eased * target).toFixed(1)));
-      if (t < 1) requestAnimationFrame(step);
-    };
-
-    const id = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(id);
-  }, [target, duration]);
-
-  return val;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Loading Skeletons
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Pulse({ className }: { className?: string }) {
-  return <div className={`rounded-xl bg-zinc-800/70 animate-pulse ${className ?? ""}`} />;
-}
-
 function DashboardSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Pulse className="h-[200px]" />
-          <Pulse className="h-[200px]" />
+    <div className="space-y-6">
+      {/* 4 KPI Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 space-y-3 animate-pulse">
+            <div className="h-3 w-16 bg-[#1f1f1f] rounded" />
+            <div className="h-8 w-28 bg-[#1f1f1f] rounded" />
+            <div className="h-4 w-20 bg-[#1f1f1f] rounded" />
+          </div>
+        ))}
+      </div>
+      
+      {/* Chart & Spending Breakdown */}
+      <div className="flex flex-col xl:flex-row gap-6">
+        <div className="flex-1 bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 space-y-4 animate-pulse">
+          <div className="h-4 w-24 bg-[#1f1f1f] rounded" />
+          <div className="h-[200px] bg-[#1f1f1f] rounded" />
         </div>
-        <div className="space-y-4">
-          <Pulse className="h-4 w-32" />
-          {[1, 2, 3].map((i) => (
-            <Pulse key={i} className="h-16 w-full" />
+        <div className="xl:w-80 w-full shrink-0 bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 space-y-4 animate-pulse">
+          <div className="h-4 w-28 bg-[#1f1f1f] rounded" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-2">
+              <div className="flex justify-between">
+                <div className="h-3.5 w-16 bg-[#1f1f1f] rounded" />
+                <div className="h-3.5 w-10 bg-[#1f1f1f] rounded" />
+              </div>
+              <div className="h-1 bg-[#1f1f1f] rounded-full" />
+            </div>
           ))}
         </div>
       </div>
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <Pulse className="h-4 w-32" />
-          <Pulse className="h-28 w-full" />
+
+      {/* Transactions & Alerts */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 space-y-4 animate-pulse">
+          <div className="h-4 w-32 bg-[#1f1f1f] rounded" />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 bg-[#1f1f1f] rounded" />
+          ))}
         </div>
-        <div className="space-y-4">
-          <Pulse className="h-4 w-32" />
-          <div className="grid grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Pulse key={i} className="h-24" />
-            ))}
-          </div>
+        <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 space-y-4 animate-pulse">
+          <div className="h-4 w-24 bg-[#1f1f1f] rounded" />
+          {[1, 2].map((i) => (
+            <div key={i} className="h-16 bg-[#1f1f1f] rounded" />
+          ))}
         </div>
       </div>
     </div>
@@ -172,32 +145,54 @@ function DashboardSkeleton() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Dashboard Page
+// Recharts Custom Tooltip
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const rawVal = payload[0].payload.burnRaw;
+    return (
+      <div className="bg-[#171717] border border-[#2a2a2a] rounded-lg p-2.5 shadow-xl">
+        <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider">Gross Burn</p>
+        <p className="text-white text-xs font-semibold mt-0.5">₹{rawVal.toLocaleString("en-IN")}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Dashboard Rebuild
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── States ────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
-  const [firstName, setFirstName] = useState("there");
+  const [mounted, setMounted] = useState(false);
   const [company, setCompany] = useState<Company | null>(null);
   const [financials, setFinancials] = useState<Financials | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
+  // Computed Values
+  const [cashBalance, setCashBalance] = useState(0);
   const [grossBurn, setGrossBurn] = useState(0);
   const [netBurn, setNetBurn] = useState(0);
-  const [lastMonthBurn, setLastMonthBurn] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [burnChange, setBurnChange] = useState<number | null>(null);
   const [categories, setCategories] = useState<{ category: string; amount: number }[]>([]);
-  const [cashBalance, setCashBalance] = useState(0);
   const [runway, setRunway] = useState(0);
   const [hasTx, setHasTx] = useState(false);
 
-  const animatedRunway = useCountUp(loading ? 0 : runway);
+  // Set mounted state for Recharts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // ── Fetch data ────────────────────────────────────────────────────────────
+  // ── Fetch Everything ──────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const sb = createClient();
@@ -210,13 +205,11 @@ export default function DashboardPage() {
         router.replace("/auth/login");
         return;
       }
-      const name: string = user.user_metadata?.full_name ?? "";
-      setFirstName(name.split(" ")[0] || "there");
 
       // 2. Company check
       const { data: co } = await sb
         .from("companies")
-        .select("id, name, sector, company_age, team_size")
+        .select("id, name")
         .eq("user_id", user.id)
         .maybeSingle();
       if (!co) {
@@ -235,13 +228,14 @@ export default function DashboardPage() {
       const cash = parseCashBalance(fin?.cash_balance_range ?? "");
       setCashBalance(cash);
 
+      // Date ranges for MoM check
       const now = new Date();
       const y = now.getFullYear();
       const m = now.getMonth();
       const lastStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
       const lastEnd = new Date(y, m, 0).toISOString().slice(0, 10);
 
-      // 4. Fetch all transactions
+      // 4. All transactions
       const { data: txAll } = await sb
         .from("transactions")
         .select("id, amount, type, category, description, transaction_date")
@@ -249,9 +243,10 @@ export default function DashboardPage() {
         .order("transaction_date", { ascending: false });
 
       const allTx = (txAll ?? []) as Transaction[];
+      setTransactions(allTx);
       setHasTx(allTx.length > 0);
 
-      // 5. Fetch last month's transactions for comparison
+      // Last month debits
       const { data: txLast } = await sb
         .from("transactions")
         .select("amount, type")
@@ -259,7 +254,15 @@ export default function DashboardPage() {
         .gte("transaction_date", lastStart)
         .lte("transaction_date", lastEnd);
 
-      // 6. Fetch unread insights
+      // 5. Monthly snapshots
+      const { data: snapData } = await sb
+        .from("monthly_snapshots")
+        .select("month, gross_burn, net_burn, total_revenue")
+        .eq("company_id", co.id)
+        .order("month", { ascending: true });
+      if (snapData) setSnapshots(snapData as Snapshot[]);
+
+      // 6. Risk insights (Alerts)
       const { data: ins } = await sb
         .from("insights")
         .select("id, type, severity, content, read_at, created_at")
@@ -269,15 +272,13 @@ export default function DashboardPage() {
         .limit(5);
       setInsights((ins ?? []) as Insight[]);
 
-      // ── Process calculations ──────────────────────────────────────────────
+      // ── Process Metrics ───────────────────────────────────────────────────
       const debits = allTx.filter((t) => t.type === "debit");
       const credits = allTx.filter((t) => t.type === "credit");
 
       const dates = allTx.map((t) => t.transaction_date).sort();
       const dateFrom = dates[0] ? new Date(dates[0]) : new Date();
-      const dateTo = dates[dates.length - 1]
-        ? new Date(dates[dates.length - 1])
-        : new Date();
+      const dateTo = dates[dates.length - 1] ? new Date(dates[dates.length - 1]) : new Date();
       const spanMonths = Math.max(
         (dateTo.getFullYear() - dateFrom.getFullYear()) * 12 +
           (dateTo.getMonth() - dateFrom.getMonth()) +
@@ -297,9 +298,9 @@ export default function DashboardPage() {
 
       setGrossBurn(gb);
       setNetBurn(nb);
-      setLastMonthBurn(lmb);
+      setMonthlyRevenue(rev);
 
-      // Burn delta comparison
+      // Burn change percentage MoM
       const curDate = new Date();
       const curStart = `${curDate.getFullYear()}-${String(
         curDate.getMonth() + 1
@@ -309,7 +310,7 @@ export default function DashboardPage() {
         .reduce((s, t) => s + Number(t.amount), 0);
       if (lmb > 0) setBurnChange(((curMonthBurn - lmb) / lmb) * 100);
 
-      // Category breakdown
+      // Category breakdown (top 6 all-time debits)
       const catMap: Record<string, number> = {};
       debits.forEach((t) => {
         catMap[t.category] = (catMap[t.category] ?? 0) + Number(t.amount);
@@ -318,7 +319,7 @@ export default function DashboardPage() {
         Object.entries(catMap)
           .map(([category, amount]) => ({ category, amount }))
           .sort((a, b) => b.amount - a.amount)
-          .slice(0, 5)
+          .slice(0, 6)
       );
 
       // Runway
@@ -347,306 +348,353 @@ export default function DashboardPage() {
     setInsights((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
-  const effectiveBurn = netBurn > 0 ? netBurn : grossBurn;
-  const unread = insights.length;
+  // Format runway text
+  const isProfitable = runway === 0 && netBurn === 0 && hasTx;
+  const runwayValueText = isProfitable ? "∞" : hasTx ? runway.toFixed(1) : "—";
+  const runwayStatusText = isProfitable ? "Profitable (infinite runway)" : "months remaining";
+
+  // Chart data extraction (last 6 snapshots)
+  const chartData = snapshots.slice(-6).map((s) => {
+    const d = new Date(s.month);
+    return {
+      month: d.toLocaleDateString("en-US", { month: "short" }),
+      "Gross Burn": Number((s.gross_burn / 100000).toFixed(2)),
+      burnRaw: s.gross_burn,
+    };
+  });
 
   return (
     <AppLayout
-      title={`Dashboard`}
-      subtitle={`${getGreeting()}, ${firstName}! Here's your corporate overview.`}
+      title="Overview"
+      subtitle="Your financial command center"
       activeTab="Overview"
     >
-      {/* Hidden file input for dashboard page triggers */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.xls,.xlsx,.csv"
-        className="hidden"
-        onChange={async (e) => {
-          const f = e.target.files?.[0];
-          if (!f || !company) return;
-          try {
-            const fd = new FormData();
-            fd.append("file", f);
-            fd.append("company_id", company.id);
-            const res = await fetch("/api/parse-statement", {
-              method: "POST",
-              body: fd,
-            });
-            if (res.ok) {
-              window.location.reload();
-            } else {
-              const data = await res.json();
-              alert(data.error || "Upload failed.");
-            }
-          } catch {
-            alert("Upload failed. Please try again.");
-          }
-          e.target.value = "";
-        }}
-      />
-
       {loading ? (
         <DashboardSkeleton />
       ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="space-y-8"
-        >
-          {/* Main Desktop Columns Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left 2 Columns: Financial Cards and Categories */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* RUNWAY CARD */}
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05, duration: 0.35 }}
-                  className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6 flex flex-col justify-between"
+        <div className="space-y-6">
+          {/* ── SECTION 1: KPI ROW (4 Cards) ──────────────────────────────── */}
+          <div className="grid grid-cols-4 gap-4">
+            {/* CARD 1: RUNWAY */}
+            <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between min-h-[140px]">
+              <div>
+                <span className="text-zinc-400 text-[10px] uppercase tracking-wider font-mono">
+                  Runway
+                </span>
+                <p
+                  className={`text-3xl font-bold mt-1 tracking-tight ${
+                    isProfitable
+                      ? "text-emerald-400"
+                      : runway > 12
+                      ? "text-emerald-400"
+                      : runway >= 6
+                      ? "text-white"
+                      : "text-red-400"
+                  }`}
                 >
-                  <div>
-                    <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-mono font-medium">
-                      Runway Remaining
-                    </p>
-                    <div className="flex items-baseline gap-2 mt-4">
-                      <span
-                        className={`text-5xl font-bold tracking-tight leading-none ${runwayColor(
-                          runway
-                        )}`}
-                      >
-                        {hasTx ? animatedRunway.toFixed(1) : "—"}
-                      </span>
-                      <span className="text-zinc-500 text-lg font-light">months</span>
-                    </div>
-                    <p className="text-zinc-400 text-xs mt-2 font-light">
-                      estimated cash availability
-                    </p>
-                  </div>
-
-                  <div className="mt-6">
-                    {/* Health progress bar */}
-                    <div className="bg-zinc-800/80 h-2 rounded-full w-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min((runway / 18) * 100, 100)}%` }}
-                        transition={{ duration: 1.3, ease: "easeOut", delay: 0.3 }}
-                        className={`h-full rounded-full ${runwayBarColor(runway)}`}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between mt-3 text-[11px] font-mono text-zinc-500">
-                      <span>{fmt(cashBalance)} cash reserves</span>
-                      {hasTx && runway > 0 && runway < 120 && (
-                        <span>Zero cash: {zeroCashDate(runway)}</span>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* BURN CARD */}
-                <motion.div
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.35 }}
-                  className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6 flex flex-col justify-between"
-                >
-                  <div>
-                    <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-mono font-medium">
-                      Net Monthly Burn
-                    </p>
-                    <div className="flex items-baseline justify-between mt-4">
-                      <span className="text-white text-5xl font-bold tracking-tight leading-none">
-                        {fmt(effectiveBurn)}
-                      </span>
-                      {burnChange !== null && (
-                        <div className="text-right">
-                          <span
-                            className={`text-sm font-semibold inline-flex items-center ${
-                              burnChange > 0 ? "text-red-400" : "text-emerald-400"
-                            }`}
-                          >
-                            {burnChange > 0 ? "↑" : "↓"} {Math.abs(burnChange).toFixed(0)}%
-                          </span>
-                          <span className="block text-[10px] text-zinc-600 font-mono mt-0.5">
-                            MoM Change
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-zinc-400 text-xs mt-2 font-light">
-                      average net operations spend
-                    </p>
-                  </div>
-
-                  <div className="mt-6 text-xs text-zinc-500 border-t border-zinc-800/40 pt-4 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-zinc-600" />
-                    <span>Average gross burn: <strong>{fmt(grossBurn)}</strong>/mo</span>
-                  </div>
-                </motion.div>
+                  {runwayValueText}
+                </p>
+                <span className="text-zinc-500 text-xs mt-1 block">
+                  {runwayStatusText}
+                </span>
               </div>
-
-              {/* WHERE IT WENT (SPEND BREAKDOWN) */}
-              <div className="space-y-4">
-                <h3 className="text-zinc-400 text-[10px] uppercase tracking-widest font-mono font-semibold px-1">
-                  Corporate Spend Breakdown
-                </h3>
-
-                {!hasTx ? (
-                  <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-2xl p-8 text-center max-w-md mx-auto">
-                    <p className="text-zinc-500 text-sm leading-relaxed mb-4">
-                      Feed the brain a bank statement to map out your top operational cost categories automatically.
-                    </p>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-600/20 transition-all rounded-xl py-3 px-6 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer mx-auto"
-                    >
-                      <UploadCloud className="h-4 w-4" />
-                      Upload your first statement
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {categories.map((cat, i) => {
-                      const totalDebits = categories.reduce((s, c) => s + c.amount, 0);
-                      const pct = totalDebits > 0 ? (cat.amount / totalDebits) * 100 : 0;
-                      return (
-                        <motion.div
-                          key={cat.category}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.15 + i * 0.07, duration: 0.28 }}
-                          className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl px-5 py-4"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-white text-sm font-medium">
-                              {CAT_EMOJI[cat.category] ?? "📦"} {cat.category}
-                            </span>
-                            <span className="text-zinc-400 text-xs font-mono">
-                              {fmt(cat.amount)} ({pct.toFixed(0)}%)
-                            </span>
-                          </div>
-                          <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${pct}%` }}
-                              transition={{
-                                duration: 1.0,
-                                delay: 0.25 + i * 0.07,
-                                ease: "easeOut",
-                              }}
-                              className="h-full bg-indigo-500 rounded-full"
-                            />
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+              <div className="mt-4">
+                <div className="bg-zinc-800/60 h-1 rounded-full w-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      isProfitable || runway > 12
+                        ? "bg-emerald-500"
+                        : runway >= 6
+                        ? "bg-white/80"
+                        : "bg-red-400"
+                    }`}
+                    style={{ width: `${isProfitable ? 100 : Math.min((runway / 18) * 100, 100)}%` }}
+                  />
+                </div>
+                {hasTx && runway > 0 && runway < 120 && (
+                  <p className="text-zinc-600 text-[10px] font-mono mt-2">
+                    Zero cash: {zeroCashDate(runway)}
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Right 1 Column: Alerts & Actions */}
-            <div className="space-y-8">
-              {/* BRAIN ALERTS (Active notifications) */}
-              {unread > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-zinc-400 text-[10px] uppercase tracking-widest font-mono font-semibold px-1">
-                    CFO Risk Signals
-                  </h3>
-                  <div className="space-y-3">
-                    <AnimatePresence>
-                      {insights.map((ins) => (
-                        <motion.div
-                          key={ins.id}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, height: 0, padding: 0, marginBottom: 0 }}
-                          transition={{ duration: 0.22 }}
-                          className={`bg-zinc-900/60 border rounded-xl p-4 border-zinc-800/60 border-l-4 ${
-                            ins.severity === "critical"
-                              ? "border-l-red-500"
-                              : ins.severity === "warning"
-                              ? "border-l-amber-500"
-                              : "border-l-indigo-500"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-white text-xs font-semibold">
-                                {ins.severity === "critical"
-                                  ? "🚨 Critical Alert"
-                                  : ins.severity === "warning"
-                                  ? "⚠️ Action Warning"
-                                  : "💡 AI Observation"}
-                              </p>
-                              <p className="text-zinc-400 text-[11px] mt-1.5 leading-relaxed">
-                                {ins.content}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => dismiss(ins.id)}
-                              className="text-zinc-600 hover:text-zinc-400 p-0.5 rounded transition-colors cursor-pointer"
-                              aria-label="Dismiss alert"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
+            {/* CARD 2: MONTHLY BURN */}
+            <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between min-h-[140px]">
+              <div>
+                <span className="text-zinc-400 text-[10px] uppercase tracking-wider font-mono">
+                  Monthly Burn
+                </span>
+                <p className="text-white text-3xl font-bold mt-1 tracking-tight">
+                  {fmt(grossBurn)}
+                </p>
+              </div>
+              {burnChange !== null && (
+                <div className="mt-2.5">
+                  <span
+                    className={`inline-flex items-center gap-0.5 text-[10px] font-mono font-medium rounded-full px-2 py-0.5 ${
+                      burnChange > 0
+                        ? "bg-red-500/10 text-red-400"
+                        : "bg-emerald-500/10 text-emerald-400"
+                    }`}
+                  >
+                    {burnChange > 0 ? "↑" : "↓"}
+                    {Math.abs(burnChange).toFixed(0)}% vs last month
+                  </span>
                 </div>
               )}
+            </div>
 
-              {/* QUICK ACTIONS PANEL */}
-              <div className="space-y-4">
-                <h3 className="text-zinc-400 text-[10px] uppercase tracking-widest font-mono font-semibold px-1">
-                  Quick Actions
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {(
-                    [
-                      { id: "qa-brain",    emoji: "💬", label: "Ask Brain",  href: "/brain"    },
-                      { id: "qa-upload",   emoji: "📄", label: "Upload Statement", href: null  },
-                      { id: "qa-report",   emoji: "📊", label: "Create Report", href: "/reports" },
-                      { id: "qa-settings", emoji: "⚙️", label: "Preferences", href: "/settings" },
-                    ] as const
-                  ).map((action) =>
-                    action.href ? (
-                      <Link
-                        key={action.id}
-                        id={action.id}
-                        href={action.href}
-                        className="bg-zinc-900/60 border border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2.5 min-h-[96px] text-center transition-all shadow-sm"
-                      >
-                        <span className="text-xl shrink-0">{action.emoji}</span>
-                        <span className="text-[11px] text-zinc-400 font-mono font-medium">
-                          {action.label}
-                        </span>
-                      </Link>
-                    ) : (
-                      <button
-                        key={action.id}
-                        id={action.id}
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="bg-zinc-900/60 border border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2.5 min-h-[96px] text-center transition-all cursor-pointer shadow-sm"
-                      >
-                        <span className="text-xl shrink-0">{action.emoji}</span>
-                        <span className="text-[11px] text-zinc-400 font-mono font-medium">
-                          {action.label}
-                        </span>
-                      </button>
-                    )
-                  )}
-                </div>
+            {/* CARD 3: CASH BALANCE */}
+            <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between min-h-[140px]">
+              <div>
+                <span className="text-zinc-400 text-[10px] uppercase tracking-wider font-mono">
+                  Cash in Bank
+                </span>
+                <p className="text-white text-3xl font-bold mt-1 tracking-tight">
+                  {fmt(cashBalance)}
+                </p>
+              </div>
+              <div>
+                <span className="text-zinc-600 text-[10px] font-mono block">
+                  Approximate Balance
+                </span>
+              </div>
+            </div>
+
+            {/* CARD 4: NET BURN */}
+            <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between min-h-[140px]">
+              <div>
+                <span className="text-zinc-400 text-[10px] uppercase tracking-wider font-mono">
+                  Net Burn
+                </span>
+                <p className="text-white text-3xl font-bold mt-1 tracking-tight">
+                  {fmt(netBurn)}
+                </p>
+              </div>
+              <div>
+                <span className="text-zinc-500 text-[10px] font-mono leading-none block">
+                  after {fmt(monthlyRevenue)} avg revenue
+                </span>
               </div>
             </div>
           </div>
-        </motion.div>
+
+          {/* ── SECTION 2: BURN CHART & SPEND BREAKDOWN ─────────────────── */}
+          <div className="flex flex-col xl:flex-row gap-6 mt-6">
+            {/* Chart Area (left) */}
+            <div className="flex-1 bg-[#171717] border border-[#2a2a2a] rounded-xl p-5">
+              <h4 className="text-white text-sm font-semibold mb-6">Burn Trend</h4>
+              {hasTx && chartData.length > 0 ? (
+                mounted && (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis
+                        dataKey="month"
+                        stroke="#52525b"
+                        fontSize={10}
+                        fontFamily="monospace"
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        stroke="#52525b"
+                        fontSize={10}
+                        fontFamily="monospace"
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => `₹${v}L`}
+                      />
+                      <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#2a2a2a", strokeWidth: 1 }} />
+                      <Area
+                        type="monotone"
+                        dataKey="Gross Burn"
+                        stroke="#6366f1"
+                        strokeWidth={2}
+                        fill="rgba(99, 102, 241, 0.12)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )
+              ) : (
+                <div className="h-[200px] border border-dashed border-zinc-800 rounded-xl flex items-center justify-center text-center">
+                  <p className="text-zinc-500 text-xs font-mono">
+                    Upload statement to see burn trend
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Spending Breakdown (right) */}
+            <div className="xl:w-80 w-full shrink-0 bg-[#171717] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-baseline justify-between mb-4">
+                <h4 className="text-white text-sm font-semibold">Where It Went</h4>
+                <span className="text-zinc-500 text-[10px] font-mono">This month</span>
+              </div>
+
+              {categories.length === 0 ? (
+                <div className="h-[200px] border border-dashed border-zinc-800 rounded-xl flex items-center justify-center text-center">
+                  <p className="text-zinc-500 text-xs font-mono">
+                    Upload a statement to see breakdown
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {categories.map((cat, i) => {
+                    const totalDebits = categories.reduce((s, c) => s + c.amount, 0);
+                    const pct = totalDebits > 0 ? (cat.amount / totalDebits) * 100 : 0;
+                    return (
+                      <div key={cat.category} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-300">
+                            {CAT_EMOJI[cat.category] ?? "📦"} {cat.category}
+                          </span>
+                          <span className="text-white font-medium font-mono">
+                            {fmt(cat.amount)}
+                          </span>
+                        </div>
+                        <div className="h-1 bg-[#2a2a2a] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${i === 0 ? "bg-emerald-500" : "bg-indigo-500"}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className="text-right">
+                          <span className="text-zinc-600 text-[9px] font-mono leading-none">
+                            {pct.toFixed(0)}% of total
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── SECTION 3: TRANSACTIONS & BRAIN ALERTS ──────────────────── */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
+            {/* Recent Transactions List */}
+            <div className="xl:col-span-2 bg-[#171717] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-5">
+                <h4 className="text-white text-sm font-semibold">Recent Transactions</h4>
+                <Link href="/brain" className="text-indigo-400 text-xs font-mono hover:text-indigo-300 transition-colors">
+                  View all →
+                </Link>
+              </div>
+
+              {transactions.length === 0 ? (
+                <div className="py-12 text-center border border-dashed border-zinc-800 rounded-xl">
+                  <p className="text-zinc-500 text-xs font-mono">No transaction records found.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#2a2a2a] pb-2 text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
+                        <th className="pb-3 font-medium">Date</th>
+                        <th className="pb-3 font-medium">Description</th>
+                        <th className="pb-3 font-medium">Category</th>
+                        <th className="pb-3 font-medium text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#2a2a2a]/40">
+                      {transactions.slice(0, 8).map((tx) => {
+                        const d = new Date(tx.transaction_date);
+                        const formattedDate = d.toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                        });
+                        return (
+                          <tr key={tx.id} className="hover:bg-[#1f1f1f] transition-all group">
+                            <td className="py-3 text-zinc-500 text-xs font-mono">{formattedDate}</td>
+                            <td className="py-3 text-white text-sm truncate max-w-[180px] font-light">
+                              {tx.description}
+                            </td>
+                            <td className="py-3">
+                              <span className="inline-flex bg-[#2a2a2a] text-zinc-400 text-[10px] font-mono rounded px-2 py-0.5">
+                                {tx.category}
+                              </span>
+                            </td>
+                            <td
+                              className={`py-3 text-sm font-medium font-mono text-right ${
+                                tx.type === "debit" ? "text-red-400" : "text-emerald-400"
+                              }`}
+                            >
+                              {tx.type === "debit" ? "−" : "+"}
+                              {fmt(tx.amount)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Brain Alerts Console */}
+            <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-5">
+                <Bell className="h-4.5 w-4.5 text-indigo-400" />
+                <h4 className="text-white text-sm font-semibold">Brain Alerts</h4>
+              </div>
+
+              {insights.length === 0 ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-xl min-h-[220px]">
+                  <p className="text-zinc-500 text-sm font-semibold">No alerts right now</p>
+                  <p className="text-zinc-600 text-xs mt-1 font-mono">The brain is watching your finances</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {insights.map((ins) => (
+                      <motion.div
+                        key={ins.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, height: 0, padding: 0, marginBottom: 0 }}
+                        transition={{ duration: 0.22 }}
+                        className={`bg-zinc-950/20 border-l-2 p-3.5 rounded flex flex-col gap-1.5 ${
+                          ins.severity === "critical"
+                            ? "border-l-red-500"
+                            : ins.severity === "warning"
+                            ? "border-l-amber-500"
+                            : "border-l-indigo-500"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="text-white text-xs font-semibold">
+                            {ins.severity === "critical"
+                              ? "Critical Risk"
+                              : ins.severity === "warning"
+                              ? "System Warning"
+                              : "CFO Insight"}
+                          </span>
+                          <button
+                            onClick={() => dismiss(ins.id)}
+                            className="text-zinc-600 hover:text-zinc-400 text-[10px] font-mono cursor-pointer transition-colors"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] leading-relaxed font-light">
+                          {ins.content}
+                        </p>
+                        <span className="text-zinc-600 text-[9px] font-mono mt-1">
+                          {new Date(ins.created_at).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </AppLayout>
   );
