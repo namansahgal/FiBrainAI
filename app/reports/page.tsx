@@ -1,26 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
-  LayoutDashboard,
-  Cpu,
   FileText,
-  Bell,
-  Settings,
   ArrowRight,
   Clipboard,
   Check,
   RefreshCw,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/src/lib/supabase/client";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
+import AppLayout from "@/src/components/layout/AppLayout";
 
 type Company = {
   id: string;
@@ -50,7 +43,7 @@ export default function ReportsPage() {
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ── Load data on mount ────────────────────────────────────────────────────
+  // ── Fetch Data ────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const sb = createClient();
@@ -64,12 +57,11 @@ export default function ReportsPage() {
         return;
       }
 
-      // 2. Company lookup
+      // 2. Company check
       const { data: co } = await sb
         .from("companies")
         .select("id, name")
         .eq("user_id", user.id)
-        .limit(1)
         .maybeSingle();
 
       if (!co) {
@@ -101,7 +93,7 @@ export default function ReportsPage() {
     })();
   }, [router]);
 
-  // ── Report Generation ─────────────────────────────────────────────────────
+  // ── Generation ────────────────────────────────────────────────────────────
   const generateReport = useCallback(async () => {
     if (!company) return;
     setIsGenerating(true);
@@ -132,7 +124,7 @@ export default function ReportsPage() {
     }
   }, [company]);
 
-  // ── Clipboard Copy ────────────────────────────────────────────────────────
+  // ── Copy Clipboard ────────────────────────────────────────────────────────
   const handleCopy = useCallback(() => {
     if (!reportText) return;
     navigator.clipboard.writeText(reportText);
@@ -140,111 +132,102 @@ export default function ReportsPage() {
     setTimeout(() => setCopied(false), 2000);
   }, [reportText]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────────────────
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 text-violet-400 animate-spin" />
-          <p className="text-zinc-500 text-sm font-mono">Loading reports…</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col text-white">
-      {/* ── MAIN CONTENT ────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-[390px] w-full mx-auto px-4 pt-8 pb-32">
-        {/* Header */}
-        <div>
-          <h1 className="text-white text-xl font-bold">Reports</h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Generate investor-ready summaries in one click
-          </p>
+    <AppLayout
+      title="Reports"
+      subtitle="Generate investor-ready summaries in one click."
+      activeTab="Reports"
+    >
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
+          <p className="text-zinc-500 text-sm font-mono">Loading reports pane…</p>
         </div>
-
-        {!briefExists ? (
-          /* ── EMPTY STATE (No statement uploaded/onboarded) ─────────────── */
-          <div className="flex flex-col items-center text-center mt-16 px-4">
-            <div className="h-16 w-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-              <FileText className="h-6 w-6 text-zinc-500" />
-            </div>
-            <p className="text-zinc-500 text-sm text-center mt-6">
-              Upload a bank statement first
-            </p>
-            <button
-              onClick={() => router.push("/onboarding")}
-              className="mt-4 bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-3 px-6 text-sm font-semibold flex items-center gap-1.5 transition-all shadow-lg shadow-violet-600/20"
-            >
-              Go to onboarding <ArrowRight className="h-4 w-4" />
-            </button>
+      ) : !briefExists ? (
+        /* Empty onboarding redirection UI */
+        <div className="flex flex-col items-center justify-center text-center py-16 px-4 max-w-md mx-auto">
+          <div className="h-16 w-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+            <FileText className="h-6 w-6 text-zinc-500" />
           </div>
-        ) : (
-          /* ── MAIN REPORT CARD ─────────────────────────────────────────── */
-          <div className="mt-6 space-y-6">
-            <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800/50">
-              <div className="h-12 w-12 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                <FileText className="h-8 w-8 text-violet-400" />
+          <p className="text-zinc-500 text-sm text-center mt-6">
+            Upload your bank statement during onboarding to initialize your company brief.
+          </p>
+          <button
+            onClick={() => router.push("/onboarding")}
+            className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl py-3 px-6 text-sm font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/10"
+          >
+            Go to onboarding <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        /* Reports generation workspace */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Action Trigger Card */}
+          <div className="space-y-6">
+            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-6">
+              <div className="h-12 w-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-indigo-400" />
               </div>
-              <h2 className="text-white text-lg font-semibold mt-3">
+              <h2 className="text-white text-md font-semibold mt-4">
                 Investor Update
               </h2>
-              <p className="text-zinc-400 text-sm mt-2 leading-relaxed">
-                Complete board-ready financial summary. Generated in 90 seconds.
+              <p className="text-zinc-400 text-xs mt-2 leading-relaxed font-light">
+                Draft a comprehensive, board-ready update mapping out opening cash, burn rates, runway forecasts, and operational anomalies automatically.
               </p>
 
               <button
                 onClick={generateReport}
                 disabled={isGenerating}
-                className="bg-violet-600 hover:bg-violet-500 disabled:bg-violet-800 disabled:opacity-50 text-white rounded-xl py-4 w-full font-semibold mt-5 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-violet-600/20"
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl py-4.5 w-full mt-6 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-600/10"
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating...
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    Generating Report...
                   </>
                 ) : (
-                  "Generate Report →"
+                  <>
+                    <Sparkles className="h-4 w-4 text-white" />
+                    Generate Report
+                  </>
                 )}
               </button>
             </div>
 
-            {/* Error Message */}
             {errorMsg && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm leading-relaxed">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-xs leading-relaxed font-mono">
                 {errorMsg}
               </div>
             )}
+          </div>
 
-            {/* Report Display */}
-            {reportText && (
+          {/* Compiled Output View */}
+          <div className="lg:col-span-2">
+            {reportText ? (
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 className="space-y-4"
               >
-                <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+                {/* Generated Content Box */}
+                <div className="bg-[#0c0c0c] border border-zinc-800 rounded-2xl p-6 text-zinc-300 text-xs leading-relaxed whitespace-pre-wrap font-mono overflow-x-auto shadow-inner">
                   {reportText}
                 </div>
 
-                <div className="space-y-2">
+                <div className="flex gap-4">
                   <button
                     onClick={handleCopy}
-                    className="bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-800 text-zinc-300 rounded-xl py-3 w-full text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl py-3 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     {copied ? (
                       <>
                         <Check className="h-4 w-4 text-emerald-400" />
-                        Copied!
+                        Copied to Clipboard!
                       </>
                     ) : (
                       <>
-                        <Clipboard className="h-4 w-4" />
+                        <Clipboard className="h-4 w-4 text-zinc-400" />
                         Copy to clipboard
                       </>
                     )}
@@ -253,46 +236,24 @@ export default function ReportsPage() {
                   <button
                     onClick={generateReport}
                     disabled={isGenerating}
-                    className="border border-zinc-700 hover:bg-zinc-900 active:bg-transparent text-zinc-400 rounded-xl py-3 w-full text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40"
+                    className="flex-1 border border-zinc-700 hover:bg-zinc-900 text-zinc-400 rounded-xl py-3 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40"
                   >
                     <RefreshCw className={`h-4 w-4 ${isGenerating ? "animate-spin" : ""}`} />
                     Regenerate
                   </button>
                 </div>
               </motion.div>
+            ) : (
+              <div className="h-full border border-dashed border-zinc-800/80 rounded-2xl flex flex-col items-center justify-center p-8 text-center bg-zinc-900/10 min-h-[300px]">
+                <FileText className="h-8 w-8 text-zinc-700" />
+                <p className="text-zinc-500 text-sm mt-3 font-light">
+                  Your generated report will appear here.
+                </p>
+              </div>
             )}
           </div>
-        )}
-      </main>
-
-      {/* ── BOTTOM NAVIGATION ─────────────────────────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-zinc-950/95 backdrop-blur-sm border-t border-zinc-800">
-        <div className="max-w-[390px] mx-auto flex items-center justify-around px-2 py-3">
-          {(
-            [
-              { href: "/dashboard", icon: LayoutDashboard, label: "Home", id: "nav-home" },
-              { href: "/brain", icon: Cpu, label: "Brain", id: "nav-brain" },
-              { href: "/reports", icon: FileText, label: "Reports", id: "nav-reports" },
-              { href: "/dashboard#alerts", icon: Bell, label: "Alerts", id: "nav-alerts" },
-              { href: "/settings", icon: Settings, label: "Settings", id: "nav-settings" },
-            ] as { href: string; icon: React.ElementType; label: string; id: string }[]
-          ).map(({ href, icon: Icon, label, id }) => (
-            <Link
-              key={id}
-              id={id}
-              href={href}
-              className={`relative flex flex-col items-center gap-1 px-3 py-1 transition-colors ${
-                href === "/reports"
-                  ? "text-violet-400"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-mono">{label}</span>
-            </Link>
-          ))}
         </div>
-      </nav>
-    </div>
+      )}
+    </AppLayout>
   );
 }
