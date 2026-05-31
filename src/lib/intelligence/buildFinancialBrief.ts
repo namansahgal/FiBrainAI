@@ -54,6 +54,11 @@ function parseCashBalance(range: string): number {
   if (range.includes("₹50L-₹2Cr")) return 12_500_000;
   if (range.includes("₹2Cr-₹10Cr")) return 60_000_000;
   if (range.includes("₹10Cr+")) return 150_000_000;
+  
+  const numericOnly = range.replace(/[^\d]/g, "");
+  if (numericOnly.length > 0) {
+    return parseInt(numericOnly, 10);
+  }
   return 0;
 }
 

@@ -56,6 +56,11 @@ function parseCashBalance(range: string): number {
   if (range.includes("₹50L-₹2Cr")) return 12_500_000;
   if (range.includes("₹2Cr-₹10Cr")) return 60_000_000;
   if (range.includes("₹10Cr+")) return 150_000_000;
+  
+  const numericOnly = range.replace(/[^\d]/g, "");
+  if (numericOnly.length > 0) {
+    return parseInt(numericOnly, 10);
+  }
   return 0;
 }
 
@@ -296,8 +301,12 @@ export default function DashboardPage() {
         .filter((t) => t.type === "debit")
         .reduce((s, t) => s + Number(t.amount), 0);
 
-      setGrossBurn(gb);
-      setNetBurn(nb);
+      const selfReportedSpend = parseCashBalance(fin?.monthly_spend_range ?? "");
+      const grossBurnValue = gb > 0 ? gb : selfReportedSpend;
+      const netBurnValue = nb > 0 ? nb : (gb > 0 ? nb : selfReportedSpend);
+
+      setGrossBurn(grossBurnValue);
+      setNetBurn(netBurnValue);
       setMonthlyRevenue(rev);
 
       // Burn change percentage MoM
@@ -323,16 +332,12 @@ export default function DashboardPage() {
       );
 
       // Runway
-      if (allTx.length > 0) {
-        const burnDivisor = nb > 0 ? nb : gb > 0 ? gb : 0;
-        setRunway(
-          cash > 0 && burnDivisor > 0
-            ? parseFloat((cash / burnDivisor).toFixed(1))
-            : 0
-        );
-      } else {
-        setRunway(0);
-      }
+      const burnDivisor = netBurnValue > 0 ? netBurnValue : grossBurnValue > 0 ? grossBurnValue : 0;
+      setRunway(
+        cash > 0 && burnDivisor > 0
+          ? parseFloat((cash / burnDivisor).toFixed(1))
+          : 0
+      );
 
       setLoading(false);
     })();
@@ -349,8 +354,8 @@ export default function DashboardPage() {
   }, []);
 
   // Format runway text
-  const isProfitable = runway === 0 && netBurn === 0 && hasTx;
-  const runwayValueText = isProfitable ? "∞" : hasTx ? runway.toFixed(1) : "—";
+  const isProfitable = runway === 0 && netBurn === 0 && (hasTx || grossBurn > 0);
+  const runwayValueText = isProfitable ? "∞" : (hasTx || runway > 0) ? runway.toFixed(1) : "—";
   const runwayStatusText = isProfitable ? "Profitable (infinite runway)" : "months remaining";
 
   // Chart data extraction (last 6 snapshots)
