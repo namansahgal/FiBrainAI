@@ -13,11 +13,11 @@ import { INITIAL_BUILD_LOGS, BuildLogEntry } from './data';
 // Component imports
 import Home from './components/Home';
 import About from './components/About';
-import Demo from './components/Demo';
+import TestFlow from './components/TestFlow';
 import BuildLog from './components/BuildLog';
 import CoFounder from './components/CoFounder';
 
-export type Page = 'home' | 'about' | 'demo' | 'build-log' | 'co-founder';
+export type Page = 'home' | 'about' | 'test-flow' | 'build-log' | 'co-founder';
 type CoFounderApplication = { name: string; email: string; linkedin: string; message: string; date: string };
 
 const removeEmptyBuildLogPlaceholders = (logs: BuildLogEntry[]) =>
@@ -255,12 +255,12 @@ export default function App() {
               About
             </button>
             <button
-              onClick={() => handleLinkClick('demo')}
+              onClick={() => handleLinkClick('test-flow')}
               className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
-                currentPage === 'demo' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
+                currentPage === 'test-flow' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
               }`}
             >
-              Demo
+              Test Flow
             </button>
             <button
               onClick={() => handleLinkClick('build-log')}
@@ -323,12 +323,12 @@ export default function App() {
                 About
               </button>
               <button
-                onClick={() => handleLinkClick('demo')}
+                onClick={() => handleLinkClick('test-flow')}
                 className={`w-full py-2 px-3 rounded-lg text-left transition-colors ${
-                  currentPage === 'demo' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
+                  currentPage === 'test-flow' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
                 }`}
               >
-                Demo Sandbox
+                Test Flow
               </button>
               <button
                 onClick={() => handleLinkClick('build-log')}
@@ -378,8 +378,8 @@ export default function App() {
               <About />
             )}
             
-            {currentPage === 'demo' && (
-              <Demo />
+            {currentPage === 'test-flow' && (
+              <TestFlow />
             )}
             
             {currentPage === 'build-log' && (

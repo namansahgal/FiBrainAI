@@ -168,6 +168,35 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  const handleAutoFill = () => {
+    setCompanyName("Acme Corp (Demo)");
+    setSector("B2B SaaS for HR teams");
+    setCompanyAge("1-2 years");
+    setTeamSize("8");
+    setFundingStage("Seed");
+    setCashBalance("65,00,000");
+    setMonthlySpend("8,40,000");
+    setMonthlyRevenue("2,50,000");
+    setPainPoint("I don't know exactly how long my runway is");
+
+    const sampleCSVContent = `Date,Description,Debit,Credit,Balance
+01/05/2026,Opening Balance,,,500000
+03/05/2026,AWS AMAZON WEB SERVICES,45000,,455000
+05/05/2026,SALARY MAY 2026 NEFT,,280000,735000
+07/05/2026,NOTION SUBSCRIPTION,4800,,730200
+10/05/2026,SWIGGY FOOD ORDER,850,,729350
+12/05/2026,GOOGLE ADS MAY,25000,,704350
+15/05/2026,CLIENT PAYMENT NEFT,,75000,779350
+18/05/2026,FIGMA SUBSCRIPTION,3200,,776150
+20/05/2026,AWS AMAZON WEB SERVICES,38000,,738150
+22/05/2026,UBER TRAVEL,1200,,736950
+25/05/2026,ZOOM SUBSCRIPTION,2400,,734550
+28/05/2026,RAPIDO AUTO,450,,734100`;
+
+    const file = new File([sampleCSVContent], "sample-statement.csv", { type: "text/csv" });
+    setFiles([file]);
+  };
+
   // ── Auth Guard ───────────────────────────────────────────────────────────
   const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
@@ -398,13 +427,22 @@ Your first action: Upload your bank statements and I'll show you exactly where y
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
-                <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">
-                    Company Profile
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-1 font-light">
-                    Help the AI CFO understand your business model.
-                  </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-xl font-bold text-white tracking-tight">
+                      Company Profile
+                    </h2>
+                    <p className="text-xs text-zinc-500 mt-1 font-light">
+                      Help the AI CFO understand your business model.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAutoFill}
+                    className="cursor-pointer text-[10px] font-mono bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/25 px-2.5 py-1.5 rounded-lg transition-colors"
+                  >
+                    ⚡ Auto-fill Sample
+                  </button>
                 </div>
 
                 <div className="space-y-4">

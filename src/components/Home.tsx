@@ -331,10 +331,10 @@ export default function Home({ onNavigate, onSubmitWaitlist, isWaitlisted, waitl
           {/* Navigation buttons */}
           <div className="flex flex-wrap justify-center gap-4 mb-10">
             <button
-              onClick={() => onNavigate('demo')}
+              onClick={() => onNavigate('test-flow')}
               className="cursor-pointer bg-violet-600 hover:bg-violet-500 text-white rounded-xl px-5 py-3 text-sm font-semibold transition-all flex items-center gap-1.5 shadow-lg shadow-violet-600/15"
             >
-              Try Demo Sandbox
+              Try Sandbox & Test Flow
               <Sparkles className="h-4 w-4 text-violet-200" />
             </button>
             <button
