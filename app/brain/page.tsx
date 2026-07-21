@@ -306,16 +306,20 @@ export default function BrainPage() {
             <div className="p-4 border-t border-zinc-800/60 bg-[#0c0c0c]/40">
               <form onSubmit={handleSubmit} className="flex gap-3">
                 <input
+                  id="chat-input"
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask a question (e.g. How much are we spending on AWS?)..."
+                  aria-label="Ask a question about your finances"
                   disabled={isThinking}
                   className="flex-1 bg-zinc-900 border border-zinc-800/80 rounded-xl px-4 py-3.5 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 transition-all disabled:opacity-50"
                 />
                 <button
+                  id="chat-submit"
                   type="submit"
+                  aria-label="Send message"
                   disabled={!input.trim() || isThinking}
                   className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl px-5 transition-all flex items-center justify-center cursor-pointer shadow-md"
                 >

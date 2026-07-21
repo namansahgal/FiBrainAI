@@ -100,7 +100,7 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* 4 KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 space-y-3 animate-pulse">
             <div className="h-3 w-16 bg-[#1f1f1f] rounded" />
@@ -379,7 +379,7 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-6">
           {/* ── SECTION 1: KPI ROW (4 Cards) ──────────────────────────────── */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* CARD 1: RUNWAY */}
             <div className="bg-[#171717] border border-[#2a2a2a] rounded-xl p-5 flex flex-col justify-between min-h-[140px]">
               <div>

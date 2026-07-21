@@ -214,9 +214,9 @@ export default function About() {
                       <span className="flex h-2 w-2 rounded-full bg-violet-400" />
                     )}
                   </div>
-                  <h4 className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors">
+                  <h3 className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors">
                     {item.title}
-                  </h4>
+                  </h3>
                   <p className="text-sm text-neutral-400 font-light leading-relaxed max-w-xl">
                     {item.description}
                   </p>

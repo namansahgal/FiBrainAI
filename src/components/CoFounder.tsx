@@ -90,7 +90,7 @@ export default function CoFounder({ onSubmitApplication, isApplied, applications
 
           <div className="p-6 rounded-2xl glass space-y-4 shadow-sm opacity-90">
             <h4 className="text-sm font-mono text-neutral-400 uppercase tracking-wider">The Target Persona</h4>
-            <p className="text-xs text-neutral-500 leading-relaxed">
+            <p className="text-xs text-neutral-400 leading-relaxed">
               We operate on flexible late hours (balancing full-time commitments), focusing on whiteboard-led sprints, shipping robust ledger parser pipelines, and conducting real validation interviews with founders. Passion for systems engineering, absolute security patterns, and relentless building beats credentials any day.
             </p>
           </div>

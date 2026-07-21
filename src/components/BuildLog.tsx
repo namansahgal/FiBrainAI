@@ -229,8 +229,10 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
         <div className="md:col-span-6 relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
           <input
+            id="search-build-logs"
             type="text"
             placeholder="Search dev updates..."
+            aria-label="Search dev updates"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 glass rounded-xl text-sm font-mono text-white placeholder-neutral-600 focus:outline-none focus:border-violet-500/80 transition-colors shadow-inner"
@@ -315,11 +317,12 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
 
               <form onSubmit={handleVerify} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
+                  <label htmlFor="admin-passphrase" className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
                     Admin Passphrase
                   </label>
                   <div className="relative">
                     <input
+                      id="admin-passphrase"
                       ref={authInputRef}
                       type={showPassword ? 'text' : 'password'}
                       value={authInput}
@@ -420,8 +423,9 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-neutral-400 uppercase">Week Number</label>
+                    <label htmlFor="log-week" className="text-xs font-mono text-neutral-400 uppercase">Week Number</label>
                     <input
+                      id="log-week"
                       type="number"
                       value={week}
                       onChange={(e) => setWeek(Number(e.target.value))}
@@ -429,8 +433,9 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-mono text-neutral-400 uppercase">Publish Period</label>
+                    <label htmlFor="log-period" className="text-xs font-mono text-neutral-400 uppercase">Publish Period</label>
                     <input
+                      id="log-period"
                       type="text"
                       placeholder="May 2026"
                       value={date}
@@ -441,8 +446,9 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-neutral-400 uppercase">Log Title</label>
+                  <label htmlFor="log-title" className="text-xs font-mono text-neutral-400 uppercase">Log Title</label>
                   <input
+                    id="log-title"
                     type="text"
                     placeholder="e.g. Completed ICICI API Sandbox test"
                     value={title}
@@ -452,8 +458,9 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-neutral-400 uppercase">Tags / Categories (comma separated)</label>
+                  <label htmlFor="log-tags" className="text-xs font-mono text-neutral-400 uppercase">Tags / Categories (comma separated)</label>
                   <input
+                    id="log-tags"
                     type="text"
                     value={tagsInput}
                     onChange={(e) => setTagsInput(e.target.value)}
@@ -462,8 +469,9 @@ export default function BuildLog({ logs, onAddLog }: BuildLogProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-mono text-neutral-400 uppercase">Update Content (Markdown/Raw text)</label>
+                  <label htmlFor="log-content" className="text-xs font-mono text-neutral-400 uppercase">Update Content (Markdown/Raw text)</label>
                   <textarea
+                    id="log-content"
                     rows={6}
                     placeholder="Describe what was designed, fixed, or validated..."
                     value={content}

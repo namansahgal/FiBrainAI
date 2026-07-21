@@ -108,6 +108,23 @@ export default function App() {
     void loadRemoteData();
   }, []);
 
+  // Hash-based client-side routing synchronization
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const validPages: Page[] = ['home', 'about', 'test-flow', 'build-log', 'co-founder'];
+      if (validPages.includes(hash as Page)) {
+        setCurrentPage(hash as Page);
+      } else if (!hash) {
+        setCurrentPage('home');
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   // Handle Waitlist submission
   const handleWaitlistSubmit = async (email: string, source: string = 'hero') => {
     setIsWaitlisted(true);
@@ -192,10 +209,32 @@ export default function App() {
     }
   };
 
-  const handleLinkClick = (page: Page) => {
+  const handleLinkClick = (page: Page, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    window.location.hash = page === 'home' ? '' : page;
     setCurrentPage(page);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleScrollToWaitlist = (e: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    if (currentPage !== 'home') {
+      setCurrentPage('home');
+      window.location.hash = '';
+      setTimeout(() => {
+        const el = document.getElementById('final-waitlist');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+    } else {
+      const el = document.getElementById('final-waitlist');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   };
 
   return (
@@ -203,11 +242,11 @@ export default function App() {
       
       {/* Top Banner indicating startup journey */}
       <div className="bg-gradient-to-r from-violet-950/40 via-[#050505] to-[#050505] border-b border-white/5 py-2 px-4 text-center">
-        <p className="text-[10px] sm:text-xs font-mono text-neutral-500 tracking-wider flex items-center justify-center gap-1.5 flex-wrap">
+        <p className="text-[10px] sm:text-xs font-mono text-neutral-400 tracking-wider flex items-center justify-center gap-1.5 flex-wrap">
           <MapPin className="h-3 w-3 text-violet-400 shrink-0" />
           <span>Building In Public • Startup Journey Tracker</span>
           <span className="opacity-40">•</span>
-          <span className="text-violet-400 font-semibold uppercase tracking-widest text-[9px]">Founder Naman Sahgal (23)</span>
+          <span className="text-violet-400 font-semibold uppercase tracking-widest text-[9px]">Founder Naman Sahgal</span>
         </p>
       </div>
 
@@ -216,8 +255,9 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           
           {/* Logo Brand left */}
-          <button 
-            onClick={() => handleLinkClick('home')}
+          <a 
+            href="#"
+            onClick={(e) => handleLinkClick('home', e)}
             className="cursor-pointer flex items-center gap-2.5 group"
             id="nav-logo"
           >
@@ -234,60 +274,75 @@ export default function App() {
                 AI CFO
               </span>
             </div>
-          </button>
+          </a>
 
           {/* Navigation Links Right (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1 text-sm font-medium" id="desktop-nav">
+          <div className="hidden md:flex items-center gap-5" id="desktop-nav-container">
+            <nav className="flex items-center gap-1 text-sm font-medium" id="desktop-nav">
+              <a
+                href="#"
+                onClick={(e) => handleLinkClick('home', e)}
+                className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
+                  currentPage === 'home' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                Home
+              </a>
+              <a
+                href="#about"
+                onClick={(e) => handleLinkClick('about', e)}
+                className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
+                  currentPage === 'about' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                About
+              </a>
+              <a
+                href="#test-flow"
+                onClick={(e) => handleLinkClick('test-flow', e)}
+                className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
+                  currentPage === 'test-flow' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                Test Flow
+              </a>
+              <a
+                href="#build-log"
+                onClick={(e) => handleLinkClick('build-log', e)}
+                className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
+                  currentPage === 'build-log' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                Build Log
+                <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-850 text-neutral-400 font-mono">
+                  {buildLogs.length}
+                </span>
+              </a>
+              <a
+                href="#co-founder"
+                onClick={(e) => handleLinkClick('co-founder', e)}
+                className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
+                  currentPage === 'co-founder' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                Co-founder
+              </a>
+            </nav>
             <button
-              onClick={() => handleLinkClick('home')}
-              className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
-                currentPage === 'home' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
-              }`}
+              onClick={handleScrollToWaitlist}
+              className="cursor-pointer bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs py-2 px-3.5 rounded-xl transition-all shadow-md shadow-violet-600/15 hover:shadow-lg hover:shadow-violet-600/25 active:scale-95"
             >
-              Home
+              Join Waitlist
             </button>
-            <button
-              onClick={() => handleLinkClick('about')}
-              className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
-                currentPage === 'about' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              About
-            </button>
-            <button
-              onClick={() => handleLinkClick('test-flow')}
-              className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
-                currentPage === 'test-flow' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              Test Flow
-            </button>
-            <button
-              onClick={() => handleLinkClick('build-log')}
-              className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
-                currentPage === 'build-log' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              Build Log
-              <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-500 font-mono">
-                {buildLogs.length}
-              </span>
-            </button>
-            <button
-              onClick={() => handleLinkClick('co-founder')}
-              className={`cursor-pointer px-3.5 py-1.5 rounded-lg transition-colors ${
-                currentPage === 'co-founder' ? 'text-violet-400 bg-violet-950/20' : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              Co-founder
-            </button>
-          </nav>
+          </div>
 
           {/* Menu button (Mobile) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="cursor-pointer md:hidden p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white"
             id="mobile-nav-toggle"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -306,49 +361,54 @@ export default function App() {
             id="mobile-nav-menu"
           >
             <div className="px-4 py-4 flex flex-col gap-2.5 text-left font-medium text-sm">
-              <button
-                onClick={() => handleLinkClick('home')}
+              <a
+                href="#"
+                onClick={(e) => handleLinkClick('home', e)}
                 className={`w-full py-2 px-3 rounded-lg text-left transition-colors ${
                   currentPage === 'home' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
                 }`}
               >
                 Home
-              </button>
-              <button
-                onClick={() => handleLinkClick('about')}
+              </a>
+              <a
+                href="#about"
+                onClick={(e) => handleLinkClick('about', e)}
                 className={`w-full py-2 px-3 rounded-lg text-left transition-colors ${
                   currentPage === 'about' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
                 }`}
               >
                 About
-              </button>
-              <button
-                onClick={() => handleLinkClick('test-flow')}
+              </a>
+              <a
+                href="#test-flow"
+                onClick={(e) => handleLinkClick('test-flow', e)}
                 className={`w-full py-2 px-3 rounded-lg text-left transition-colors ${
                   currentPage === 'test-flow' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
                 }`}
               >
                 Test Flow
-              </button>
-              <button
-                onClick={() => handleLinkClick('build-log')}
+              </a>
+              <a
+                href="#build-log"
+                onClick={(e) => handleLinkClick('build-log', e)}
                 className={`w-full py-2 px-3 rounded-lg text-left transition-colors flex items-center justify-between ${
                   currentPage === 'build-log' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
                 }`}
               >
                 <span>Build Log</span>
-                <span className="text-xs font-mono bg-neutral-900 border border-neutral-850 px-2 py-0.5 rounded text-neutral-500">
+                <span className="text-xs font-mono bg-neutral-900 border border-neutral-850 px-2 py-0.5 rounded text-neutral-400">
                   {buildLogs.length} updates
                 </span>
-              </button>
-              <button
-                onClick={() => handleLinkClick('co-founder')}
+              </a>
+              <a
+                href="#co-founder"
+                onClick={(e) => handleLinkClick('co-founder', e)}
                 className={`w-full py-2 px-3 rounded-lg text-left transition-colors ${
                   currentPage === 'co-founder' ? 'text-violet-400 bg-violet-950/30' : 'text-neutral-400'
                 }`}
               >
                 Looking for Co-founder
-              </button>
+              </a>
             </div>
           </motion.div>
         )}
@@ -406,20 +466,20 @@ export default function App() {
           
           <div className="space-y-1">
             <p className="text-sm font-bold text-neutral-200">
-              FiBrainAI <span className="text-xs font-mono font-normal text-neutral-500">© 2026</span>
+              FiBrainAI <span className="text-xs font-mono font-normal text-neutral-400">© 2026</span>
             </p>
-            <p className="text-xs text-neutral-500 font-light max-w-sm">
+            <p className="text-xs text-neutral-400 font-light max-w-sm">
               The on-demand financial intelligence engine empowering startup founders and businesses to scale safely.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono text-neutral-500">
+          <div className="flex items-center gap-4 text-xs font-mono text-neutral-400">
             <span className="flex items-center gap-1">
               Coming Soon MVP
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
-              By Naman Sahgal (23)
+              By Naman Sahgal
             </span>
           </div>
 

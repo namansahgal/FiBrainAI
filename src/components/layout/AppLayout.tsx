@@ -232,6 +232,7 @@ export default function AppLayout({
               onClick={handleSignOut}
               className="p-1.5 text-zinc-600 hover:text-red-400 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
               title="Sign out"
+              aria-label="Sign out"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -253,6 +254,7 @@ export default function AppLayout({
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 className="text-zinc-400 hover:text-white p-1 hover:bg-zinc-900 rounded-lg"
+                aria-label="Close sidebar"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -293,7 +295,7 @@ export default function AppLayout({
                     {userEmail}
                   </span>
                 </div>
-                <button onClick={handleSignOut} className="text-zinc-600 hover:text-red-400">
+                <button onClick={handleSignOut} className="text-zinc-600 hover:text-red-400" aria-label="Sign out">
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>
@@ -311,6 +313,7 @@ export default function AppLayout({
             <button
               onClick={() => setIsSidebarOpen(true)}
               className="md:hidden p-1.5 hover:bg-zinc-900 rounded-lg text-zinc-400 hover:text-white transition-colors"
+              aria-label="Open sidebar"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -327,6 +330,7 @@ export default function AppLayout({
               href="/alerts"
               className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors relative"
               title="View Alerts"
+              aria-label="View notifications and alerts"
             >
               <Bell className="h-4.5 w-4.5" />
               {unreadAlerts > 0 && (

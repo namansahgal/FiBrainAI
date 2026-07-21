@@ -52,3 +52,57 @@ body {
   background: #7c3aed;
 }
 
+/* Alternating section background shades */
+.bg-section-hero {
+  background-color: #050505;
+}
+
+.bg-section-problem {
+  background-color: #08080f;
+  background-image: radial-gradient(at top left, rgba(99, 102, 241, 0.02) 0%, transparent 60%);
+}
+
+.bg-section-features {
+  background-color: #050505;
+}
+
+.bg-section-founder {
+  background-color: #0b0b14;
+  background-image: radial-gradient(at bottom right, rgba(124, 58, 237, 0.03) 0%, transparent 70%);
+}
+
+.bg-section-cta {
+  background-color: #050505;
+}
+
+/* Premium components */
+.stat-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.003) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  border-color: rgba(124, 58, 237, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(124, 58, 237, 0.12);
+  transform: translateY(-2px);
+}
+
+.bio-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.3);
+}
+
+/* Dynamic animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+

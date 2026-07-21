@@ -685,8 +685,9 @@ export default function ReportsPage() {
 
               {/* Period Selectors */}
               <div className="space-y-2">
-                <label className="text-zinc-500 text-[10px] uppercase font-mono tracking-wider block">Period</label>
+                <label htmlFor="period-select" className="text-zinc-500 text-[10px] uppercase font-mono tracking-wider block">Period</label>
                 <select
+                  id="period-select"
                   value={selectedPeriod}
                   onChange={(e) => setSelectedPeriod(e.target.value as Period)}
                   className="w-full bg-[#0f0f0f] border border-zinc-850 rounded-lg px-3 py-2.5 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none cursor-pointer appearance-none"
