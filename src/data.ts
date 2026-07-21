@@ -21,7 +21,32 @@ export interface CoFounderRequirement {
   desc: string;
 }
 
-export const INITIAL_BUILD_LOGS: BuildLogEntry[] = [];
+export const INITIAL_BUILD_LOGS: BuildLogEntry[] = [
+  {
+    id: 'log-3',
+    week: 3,
+    date: 'May 22, 2026',
+    title: 'UI/UX Redesign & Premium Visual Mockups',
+    content: 'Just finished a massive UI/UX overhaul of the landing page based on feedback from early testers:\n\n- Split the hero section into a clean 2-column layout and added a premium dark-themed dashboard mockup.\n- Redesigned the bootstrapped reality section with clean stat cards representing the 73% failure rate and 88% budget constraints.\n- Integrated Lucide icons for all features and simplified waitlist forms into a single unified input.\n- Added a sticky header Waitlist button that scrolls down smoothly to the waitlist.\n- Re-tinted background blocks to visually guide the visitor\'s scroll journey.',
+    tags: ['Design', 'Tech']
+  },
+  {
+    id: 'log-2',
+    week: 2,
+    date: 'May 15, 2026',
+    title: 'Implementing the Live Sandbox & CSV Parser',
+    content: 'Finished designing the interactive sandbox flow. Visitors can now spawn a secure, temporary anonymous user session with a single click and experience the onboarding or jump straight to the dashboard. Built the CSV parser logic using PapaParse, enabling automatic ingestion of bank statements, mapping transaction columns, and computing live burn rates.',
+    tags: ['Tech', 'Product']
+  },
+  {
+    id: 'log-1',
+    week: 1,
+    date: 'May 8, 2026',
+    title: 'Validating the Problem & Building the Base',
+    content: 'I started reaching out to Indian startup founders to check how they track runway. Turns out, 8 out of 10 rely on their CA\'s delayed monthly reports or compile messy Google Sheets themselves that break constantly. To solve this, I initialized the Next.js and Supabase project, configured basic JWT authentication, and set up local session fallback tracking so visitors can experience the tool even if Supabase configuration isn\'t completed.',
+    tags: ['Research', 'Product']
+  }
+];
 
 export const JOURNEY_TIMELINE: TimelineItem[] = [
   {
